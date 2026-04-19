@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FoodChain - Truy Xuất Nguồn Gốc</title>
+
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <!-- ethers.js v6 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js">
+  </script>
+
+  <!-- CSS tùy chỉnh cho sidebar -->
+  <style>
+    .nav-item-custom {
+      padding: 10px 20px;
+      color: #adb5bd;
+      cursor: pointer;
+      transition: all .15s;
+      border-left: 3px solid transparent;
+      font-size: .875rem;
+    }
+
+    .nav-item-custom:hover {
+      background: rgba(255, 255, 255, .05);
+      color: #fff;
+    }
+
+    .nav-item-custom.active {
+      background: rgba(25, 135, 84, .2);
+      color: #4ade80;
+      border-left-color: #198754;
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR TRÊN CÙNG -->
+  <nav class="navbar navbar-dark bg-success sticky-top px-4 py-2">
+    <span class="navbar-brand fw-bold fs-5">
+      <i class="bi bi-boxes me-2"></i>FOODCHAIN
+    </span>
+    <div class="d-flex align-items-center gap-3">
+      <span id="walletTag" class="text-white-50 small font-monospace d-none"></span>
+      <span id="roleTag" class="badge border border-warning text-warning d-none"></span>
+      <button id="connectBtn" class="btn btn-outline-light btn-sm" onclick="connectWallet()">
+        <i class="bi bi-wallet2 me-1"></i>Kết nối MetaMask
+      </button>
+      <button id="disconnectBtn" class="btn btn-outline-light btn-sm" onclick="disconnectWallet()">
+        <i class="bi me-1"></i>Ngắt kết nối MetaMask
+      </button>
+    </div>
+  </nav>
+
+  <!-- LAYOUT: SIDEBAR + MAIN -->
+  <div class="d-flex" style="min-height: calc(100vh - 56px);">
+
+    <!-- SIDEBAR BÊN TRÁI -->
+    <nav id="sidebar" class="bg-dark text-white flex-shrink-0" style="width: 230px; overflow-y: auto;">
+      <div class="p-3 border-bottom border-secondary">
+        <small class="text-secondary text-uppercase fw-bold" style="font-size:.65rem;">
+          Tổng quan
+        </small>
+      </div>
+      <div class="nav-item-custom active" data-panel="settings" onclick="showPanel('settings')">
+        <i class="bi bi-gear me-2"></i>Cài đặt
+      </div>
+      <div class="nav-item-custom" data-panel="dashboard" onclick="showPanel('dashboard')">
+        <i class="bi bi-speedometer2 me-2"></i>Dashboard
+      </div>
+      <div class="nav-item-custom" data-panel="trace" onclick="showPanel('trace')">
+        <i class="bi bi-search me-2"></i>Tra cứu SP
+      </div>
+      <div class="p-3 border-bottom border-secondary mt-1">
+        <small class="text-secondary text-uppercase fw-bold" style="font-size:.65rem;">
+          Quản lý
+        </small>
+      </div>
+      <div class="nav-item-custom" data-panel="admin" onclick="showPanel('admin')">
+        <i class="bi bi-person-gear me-2"></i>Participants
+      </div>
+      <div class="nav-item-custom" data-panel="farmer" onclick="showPanel('farmer')">
+        <i class="bi bi-tree me-2"></i>Nông dân
+      </div>
+      <div class="nav-item-custom" data-panel="manufacturer" onclick="showPanel('manufacturer')">
+        <i class="bi bi-building me-2"></i>Nhà máy
+      </div>
+      <div class="nav-item-custom" data-panel="distributor" onclick="showPanel('distributor')">
+        <i class="bi bi-truck me-2"></i>Phân phối
+      </div>
+      <div class="nav-item-custom" data-panel="retailer" onclick="showPanel('retailer')">
+        <i class="bi bi-shop me-2"></i>Bán lẻ
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT BÊN PHẢI -->
+    <main class="flex-grow-1 p-4 bg-light overflow-auto">
+
+      <!-- PANEL: CÀI ĐẶT -->
+      <div class="panel active" id="panel-settings">
+        <h4 class="mb-1">
+          <i class="bi bi-gear me-2 text-success"></i>Cài đặt hệ thống
+        </h4>
+        <p class="text-muted small mb-4">
+          Bước 1: Kết nối MetaMask — Bước 2: Nhập địa chỉ contract
+        </p>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title text-success text-uppercase fw-bold mb-3" style="font-size:.75rem;">Contract Address
+            </h6>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Địa chỉ smart contract</label>
+              <input type="text" id="contractAddress" class="form-control font-monospace"
+                placeholder="0x5FbDB2315678afecb367f032d93F642f64180aa3" />
+            </div>
+            <button class="btn btn-success" onclick="loadContract()">
+              <i class="bi bi-check-circle me-1"></i>Kết nối Contract
+            </button>
+            <div class="alert alert-secondary mt-3 small py-2">
+              Chạy: <code>npx hardhat node</code> rồi
+              <code>npx hardhat run scripts/deploy-and-test.js --network hardhat</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: DASHBOARD -->
+      <div class="panel" id="panel-dashboard">
+        <h4 class="mb-1">
+          <i class="bi bi-speedometer2 me-2 text-success"></i>Dashboard
+        </h4>
+        <p class="text-muted small mb-4">Tổng quan hệ thống truy xuất nguồn gốc</p>
+
+        <!-- Thống kê -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="card border-success shadow-sm text-center">
+              <div class="card-body py-3">
+                <div id="stat-total" class="display-6 fw-bold text-success">--</div>
+                <div class="text-muted small">Tổng sản phẩm</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card border-primary shadow-sm text-center">
+              <div class="card-body py-3">
+                <div id="stat-forsale" class="display-6 fw-bold text-primary">--</div>
+                <div class="text-muted small">Đang bán</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card border-warning shadow-sm text-center">
+              <div class="card-body py-3">
+                <div id="stat-shipped" class="display-6 fw-bold text-warning">--</div>
+                <div class="text-muted small">Đang vận chuyển</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danh sách sản phẩm -->
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-success text-uppercase fw-bold mb-3" style="font-size:.75rem;">
+              Sản phẩm gần đây
+            </h6>
+            <div id="productList">
+              <p class="text-muted small">Kết nối contract để xem danh sách...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: TRA CỨU -->
+      <div class="panel" id="panel-trace">
+        <h4 class="mb-1">
+          <i class="bi bi-search me-2 text-success"></i>Tra cứu sản phẩm
+        </h4>
+        <p class="text-muted small mb-4">
+          Người tiêu dùng tra cứu toàn bộ hành trình của sản phẩm
+        </p>
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <label class="form-label small text-muted fw-bold">
+              Nhập mã sản phẩm (Product ID)
+            </label>
+            <div class="input-group">
+              <input type="number" id="traceId" class="form-control" placeholder="1" min="1" />
+              <button class="btn btn-success" onclick="traceProduct()">
+                <i class="bi bi-search me-1"></i>Tra cứu
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="traceResult" class="d-none">
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <h6 class="text-success fw-bold mb-3">Hành trình sản phẩm</h6>
+              <div id="traceTimeline" class="d-flex overflow-auto pb-2 gap-2"></div>
+            </div>
+          </div>
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h6 class="text-success fw-bold mb-3">Chi tiết thông tin</h6>
+              <table class="table table-sm table-bordered" id="traceDetail"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: ADMIN - PARTICIPANTS -->
+      <div class="panel" id="panel-admin">
+        <h4 class="mb-1">
+          <i class="bi bi-person-gear me-2 text-success"></i>Quản lý Participants
+        </h4>
+        <p class="text-muted small mb-4">Chỉ Admin mới có quyền thêm/xóa người tham gia</p>
+
+        <!-- Thêm participant -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <h6 class="text-uppercase text-success fw-bold mb-3" style="font-size:.75rem;">
+              Thêm người tham gia mới
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Địa chỉ ví (address)</label>
+                <input type="text" id="p-address" class="form-control font-monospace" placeholder="0x..." />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Tên công ty / cá nhân</label>
+                <input type="text" id="p-name" class="form-control" placeholder="VD: Nông Trại Xanh" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Vai trò</label>
+                <select id="p-role" class="form-select">
+                  <option value="1">🌱 Farmer — Nông dân</option>
+                  <option value="2">🏭 Manufacturer — Nhà máy</option>
+                  <option value="3">🚚 Distributor — Nhà phân phối</option>
+                  <option value="4">🏪 Retailer — Siêu thị</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-success mt-3" onclick="addParticipant()">
+              <i class="bi bi-plus-circle me-1"></i>Thêm Participant
+            </button>
+          </div>
+        </div>
+
+        <!-- Xóa participant -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <h6 class="text-uppercase text-danger fw-bold mb-3" style="font-size:.75rem;">
+              Xóa người tham gia
+            </h6>
+            <div class="input-group">
+              <input type="text" id="p-remove-address" class="form-control font-monospace" placeholder="0x..." />
+              <button class="btn btn-outline-danger" onclick="removeParticipant()">
+                <i class="bi bi-trash me-1"></i>Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kiểm tra -->
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-uppercase text-secondary fw-bold mb-3" style="font-size:.75rem;">
+              Kiểm tra thông tin
+            </h6>
+            <div class="input-group mb-3">
+              <input type="text" id="p-check-address" class="form-control font-monospace" placeholder="0x..." />
+              <button class="btn btn-outline-success" onclick="checkParticipant()">
+                <i class="bi bi-search me-1"></i>Kiểm tra
+              </button>
+            </div>
+            <div id="participantInfo"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: NÔNG DÂN -->
+      <div class="panel" id="panel-farmer">
+        <h4 class="mb-1">
+          <i class="bi bi-tree me-2 text-success"></i>Nông dân
+        </h4>
+        <p class="text-muted small mb-4">Tạo sản phẩm mới và đánh dấu thu hoạch</p>
+
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <h6 class="text-uppercase text-success fw-bold mb-3" style="font-size:.75rem;">
+              Tạo sản phẩm mới (Planted)
+            </h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Tên sản phẩm</label>
+                <input type="text" id="f-name" class="form-control" placeholder="VD: Cà Phê Arabica" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Vị trí trang trại</label>
+                <input type="text" id="f-location" class="form-control" placeholder="VD: Bảo Lộc, Lâm Đồng" />
+              </div>
+            </div>
+            <button class="btn btn-success" onclick="createProduct()">
+              <i class="bi bi-plus-circle me-1"></i>Tạo sản phẩm
+            </button>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-uppercase text-warning fw-bold mb-3" style="font-size:.75rem;">
+              Thu hoạch sản phẩm (Harvested)
+            </h6>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Product ID</label>
+              <input type="number" id="f-harvest-id" class="form-control" placeholder="1" min="1" />
+            </div>
+            <button class="btn btn-warning text-white" onclick="harvestProduct()">
+              <i class="bi bi-basket me-1"></i>Thu hoạch
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: NHÀ MÁY -->
+      <div class="panel" id="panel-manufacturer">
+        <h4 class="mb-1">
+          <i class="bi bi-building me-2 text-success"></i>Nhà máy chế biến
+        </h4>
+        <p class="text-muted small mb-4">Nhận và chế biến sản phẩm đã thu hoạch</p>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-uppercase text-primary fw-bold mb-3" style="font-size:.75rem;">
+              Chế biến sản phẩm (Processed)
+            </h6>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Product ID cần chế biến</label>
+              <input type="number" id="m-id" class="form-control" placeholder="1" min="1" />
+            </div>
+            <div class="alert alert-info py-2 small">
+              ⚠️ Sản phẩm phải ở trạng thái <strong>Harvested</strong>
+            </div>
+            <button class="btn btn-primary" onclick="processProduct()">
+              <i class="bi bi-gear me-1"></i>Chế biến
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: PHÂN PHỐI -->
+      <div class="panel" id="panel-distributor">
+        <h4 class="mb-1">
+          <i class="bi bi-truck me-2 text-success"></i>Nhà phân phối
+        </h4>
+        <p class="text-muted small mb-4">Vận chuyển sản phẩm đã chế biến</p>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-uppercase fw-bold mb-3" style="font-size:.75rem;color:#6f42c1;">
+              Vận chuyển sản phẩm (Shipped)
+            </h6>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Product ID cần vận chuyển</label>
+              <input type="number" id="d-id" class="form-control" placeholder="1" min="1" />
+            </div>
+            <div class="alert alert-info py-2 small">
+              ⚠️ Sản phẩm phải ở trạng thái <strong>Processed</strong>
+            </div>
+            <button class="btn btn-purple text-white" style="background:#6f42c1" onclick="shipProduct()">
+              <i class="bi bi-truck me-1"></i>Vận chuyển
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: BÁN LẺ -->
+      <div class="panel" id="panel-retailer">
+        <h4 class="mb-1">
+          <i class="bi bi-shop me-2 text-success"></i>Siêu thị / Bán lẻ
+        </h4>
+        <p class="text-muted small mb-4">Nhận hàng và đặt giá bán cho người tiêu dùng</p>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-uppercase text-success fw-bold mb-3" style="font-size:.75rem;">
+              Nhận hàng và Đặt giá (ForSale)
+            </h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Product ID</label>
+                <input type="number" id="r-id" class="form-control" placeholder="1" min="1" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Giá bán (ETH)</label>
+                <input type="number" id="r-price" class="form-control" placeholder="0.05" step="0.001" min="0" />
+              </div>
+            </div>
+            <div class="alert alert-info py-2 small">
+              ⚠️ Sản phẩm phải ở trạng thái <strong>Shipped</strong>
+            </div>
+            <button class="btn btn-success" onclick="receiveProduct()">
+              <i class="bi bi-bag-check me-1"></i>Nhận hàng và Đặt giá
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast container (góc dưới bên phải) -->
+  <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle (BẮT BUỘC để Toast hoạt động) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+  </script>
+
+  <script>
+    // ABI — danh sách hàm có thể gọi từ smart contract
+    var ABI = [
+      "function admin() view returns (address)",
+      "function getTotalProducts() view returns (uint256)",
+      "function getProductState(uint256) view returns (uint8)",
+      "function getProductHistory(uint256) view returns (string,uint8,string,string,uint256,string,uint256,string,uint256,string,uint256,uint256)",
+      "function participants(address) view returns (address,string,uint8,bool)",
+      "function addParticipant(address,string,uint8) external",
+      "function removeParticipant(address) external",
+      "function createProduct(string,string) external returns (uint256)",
+      "function harvestProduct(uint256) external",
+      "function processProduct(uint256) external",
+      "function shipProduct(uint256) external",
+      "function receiveProduct(uint256,uint256) external"
+    ];
+
+    var provider, signer, contract, userAddress;
+
+    var STATE_LABELS = [
+      "Đã gieo trồng", "Đã thu hoạch", "Đã chế biến",
+      "Đang vận chuyển", "Đã nhận hàng", "Đang bán"
+    ];
+    var STATE_ICONS = ["🌱", "🌾", "🏭", "🚚", "📦", "🏪"];
+    var ROLE_LABELS = ["Admin", "Nông dân", "Nhà máy", "Nhà phân phối", "Siêu thị"];
+
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        showToast("Cần cài đặt MetaMask!", "danger"); return;
+      }
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+
+        var tag = document.getElementById("walletTag");
+        tag.textContent = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+        tag.classList.remove("d-none");
+
+        var btn = document.getElementById("connectBtn");
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Đã kết nối';
+        btn.disabled = true;
+        btn.classList.replace("btn-outline-light", "btn-light");
+
+        applyRolePermissions(null);
+        showPanel("settings");
+        showToast("Kết nối MetaMask thành công!", "success");
+        if (contract) refreshRole();
+      } catch (e) {
+        showToast("Lỗi: " + e.message, "danger");
+      }
+    }
+
+    async function disconnectWallet() {
+      provider = null;
+      signer = null;
+      userAddress = null;
+      var tag = document.getElementById("walletTag");
+      var roleTag = document.getElementById("roleTag");
+      tag.textContent = "";
+      roleTag.textContent = "";
+      tag.classList.add("d-none");
+      roleTag.classList.add("d-none");
+      var btn = document.getElementById("connectBtn");
+      btn.innerHTML = '<i class="bi bi-wallet2 me-1"></i>Kết nối MetaMask';
+      btn.disabled = false;
+      btn.classList.replace("btn-light", "btn-outline-light");
+      showToast("Đã ngắt kết nối ví", "info");
+      contract = null;
+      applyRolePermissions(null);
+    }
+
+    async function loadContract() {
+      var addr = document.getElementById("contractAddress").value.trim();
+      if (!addr) { showToast("Nhập địa chỉ contract", "warning"); return; }
+      if (!provider) { showToast("Kết nối MetaMask trước", "warning"); return; }
+      try {
+        contract = new ethers.Contract(addr, ABI, signer);
+        await contract.getTotalProducts();
+        localStorage.setItem("ftContract", addr);
+        applyRolePermissions(null);
+        showToast("Kết nối contract thành công!", "success");
+        await refreshRole();
+        await loadDashboard();
+        showPanel("dashboard");
+      } catch (e) {
+        showToast("Không thể kết nối: " + e.message, "danger");
+      }
+    }
+
+    async function refreshRole() {
+      if (!contract || !userAddress) {
+        applyRolePermissions(null);
+        return;
+      }
+      try {
+        var adminAddr = await contract.admin();
+        var roleTag = document.getElementById("roleTag");
+        var roleIndex = null;
+        if (userAddress.toLowerCase() === adminAddr.toLowerCase()) {
+          roleTag.textContent = "ADMIN";
+        } else {
+          var p = await contract.participants(userAddress);
+          var isActive = p.isActive ?? p[3];
+          var roleValue = Number(p.role ?? p[2]);
+          roleTag.textContent = isActive ? ROLE_LABELS[roleValue] : "GUEST";
+          roleIndex = isActive ? roleValue : null;
+        }
+        roleTag.classList.remove("d-none");
+        applyRolePermissions(roleIndex);
+      } catch (e) { }
+    }
+
+    function showPanel(name) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".nav-item-custom").forEach(n => n.classList.remove("active"));
+      var panel = document.getElementById("panel-" + name);
+      if (panel) panel.classList.add("active");
+      document.querySelectorAll(".nav-item-custom").forEach(el => {
+        if ((el.getAttribute("onclick") || "").indexOf(name) !== -1) el.classList.add("active");
+      });
+      if (name === "dashboard" && contract) loadDashboard();
+    }
+
+    async function loadDashboard() {
+      if (!contract) return;
+      try {
+        var n = Number(await contract.getTotalProducts());
+        document.getElementById("stat-total").textContent = n;
+        var forsale = 0, shipped = 0, rows = [];
+        for (var i = 1; i <= n; i++) {
+          var st = Number(await contract.getProductState(i));
+          if (st === 5) forsale++;
+          if (st === 3) shipped++;
+          var h = await contract.getProductHistory(i);
+          rows.push({ id: i, name: h[0], state: st });
+        }
+        document.getElementById("stat-forsale").textContent = forsale;
+        document.getElementById("stat-shipped").textContent = shipped;
+        var list = document.getElementById("productList");
+        if (!rows.length) {
+          list.innerHTML = "<p class='text-muted small'>Chưa có sản phẩm nào.</p>";
+          return;
+        }
+        list.innerHTML = rows.map(r =>
+          `<div class='d-flex justify-content-between align-items-center py-2 border-bottom'>
+         <span><span class='text-muted me-2 font-monospace'>#${r.id}</span>${r.name}</span>
+         <span class='badge bg-success'>${STATE_ICONS[r.state]} ${STATE_LABELS[r.state]}</span>
+       </div>`
+        ).join("");
+      } catch (e) {
+        console.error(e);
+        showToast("Lỗi tải dashboard: " + e.message, "danger");
+      }
+    }
+
+    // thêm đối tượng 
+
+    async function addParticipant() {
+      if (!checkContract()) return;
+      var addr = document.getElementById("p-address").value.trim();
+      var name = document.getElementById("p-name").value.trim();
+      var role = document.getElementById("p-role").value;
+      if (!addr || !name) { showToast("Nhập đầy đủ địa chỉ và tên", "warning"); return; }
+      await sendTx(
+        () => contract.addParticipant(addr, name, Number(role)),
+        "Đã thêm participant"
+      );
+    }
+    // xóa đối tượng
+    async function removeParticipant() {
+      if (!checkContract()) return;
+      var addr = document.getElementById("p-remove-address").value.trim();
+      if (!addr) { showToast("Nhập địa chỉ cần xóa", "warning"); return; }
+      await sendTx(
+        () => contract.removeParticipant(addr),
+        "Đã xóa participant"
+      );
+    }
+    // kiểm tra đối tượng
+    async function checkParticipant() {
+      if (!checkContract()) return;
+      var addr = document.getElementById("p-check-address").value.trim();
+      if (!addr) { showToast("Nhập địa chỉ cần kiểm tra", "warning"); return; }
+      try {
+        var p = await contract.participants(addr);
+        var box = document.getElementById("participantInfo");
+        var isActive = (p && (p.isActive ?? p[3])) === true;
+        var name = (p && (p.name ?? p[1])) || "";
+        var role = (p && (p.role ?? p[2])) ?? 0;
+        if (!isActive) {
+          box.innerHTML = "<div class='text-muted small'>Không tồn tại hoặc đã bị vô hiệu hóa.</div>";
+          return;
+        }
+        box.innerHTML = `
+      <div class='alert alert-success py-2 small mb-0'>
+        <div><strong>Tên:</strong> ${name}</div>
+        <div><strong>Vai trò:</strong> ${ROLE_LABELS[Number(role)]}</div>
+        <div><strong>Trạng thái:</strong> ${isActive ? "Hoạt động" : "Không"}</div>
+      </div>`;
+      } catch (e) {
+        showToast("Lỗi kiểm tra: " + (e.reason || e.message), "danger");
+      }
+    }
+    //tạo product
+    async function createProduct() {
+      if (!checkContract()) return;
+      var name = document.getElementById("f-name").value.trim();
+      var location = document.getElementById("f-location").value.trim();
+      if (!name || !location) { showToast("Nhập tên và vị trí trang trại", "warning"); return; }
+      await sendTx(
+        () => contract.createProduct(name, location),
+        "Đã tạo sản phẩm"
+      );
+    }
+    //chế biến
+    async function harvestProduct() {
+      if (!checkContract()) return;
+      var id = document.getElementById("f-harvest-id").value;
+      if (!id) { showToast("Nhập Product ID", "warning"); return; }
+      await sendTx(
+        () => contract.harvestProduct(BigInt(id)),
+        "Đã thu hoạch"
+      );
+    }
+    //thu hoạch
+    async function processProduct() {
+      if (!checkContract()) return;
+      var id = document.getElementById("m-id").value;
+      if (!id) { showToast("Nhập Product ID", "warning"); return; }
+      await sendTx(
+        () => contract.processProduct(BigInt(id)),
+        "Đã chế biến"
+      );
+    }
+    //ship
+    async function shipProduct() {
+      if (!checkContract()) return;
+      var id = document.getElementById("d-id").value;
+      if (!id) { showToast("Nhập Product ID", "warning"); return; }
+      await sendTx(
+        () => contract.shipProduct(BigInt(id)),
+        "Đã vận chuyển"
+      );
+    }
+    //nhận product
+    async function receiveProduct() {
+      if (!checkContract()) return;
+      var id = document.getElementById("r-id").value;
+      var price = document.getElementById("r-price").value;
+      if (!id || !price) { showToast("Nhập Product ID và giá bán", "warning"); return; }
+      var wei = ethers.parseEther(String(price));
+      await sendTx(
+        () => contract.receiveProduct(BigInt(id), wei),
+        "Đã nhận hàng và đặt giá"
+      );
+    }
+    // đổi account
+    async function ensureWalletReady() {
+      if (!window.ethereum) return;
+      window.ethereum.removeListener?.("accountsChanged", handleAccountsChanged);
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
+      window.ethereum.removeListener?.("chainChanged", handleChainChanged);
+      window.ethereum.on("chainChanged", handleChainChanged);
+    }
+    ///xủ lý
+    async function handleAccountsChanged(accounts) {
+      if (!accounts || accounts.length === 0) {
+        disconnectWallet();
+        return;
+      }
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+      var tag = document.getElementById("walletTag");
+      tag.textContent = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+      tag.classList.remove("d-none");
+      if (contract) refreshRole();
+    }
+    //đổi accoutn meta
+    function handleChainChanged() {
+      disconnectWallet();
+      showToast("Đã đổi mạng. Vui lòng kết nối lại ví.", "warning");
+    }
+    // bán 
+    async function traceProduct() {
+      if (!checkContract()) return;
+      var id = document.getElementById("traceId").value;
+      if (!id) { showToast("Nhập Product ID", "warning"); return; }
+      try {
+        var h = await contract.getProductHistory(BigInt(id));
+        var state = Number(h[1]);
+        var stepDefs = ["Gieo trồng", "Thu hoạch", "Chế biến", "Vận chuyển", "Nhận hàng", "Đang bán"];
+        var tl = stepDefs.map((s, i) => {
+          var cls = i < state ? "text-success" : i === state ? "text-warning" : "text-muted";
+          var arrow = i < stepDefs.length - 1 ? "<div class='align-self-center text-muted px-1'>→</div>" : "";
+          return `<div class='text-center px-1'><div class='fs-4'>${STATE_ICONS[i]}</div><div class='small fw-bold ${cls}'>${s}</div></div>${arrow}`;
+        }).join("");
+        document.getElementById("traceTimeline").innerHTML = tl;
+
+        var rows = [
+          ["Tên sản phẩm", h[0]],
+          ["Trạng thái", STATE_ICONS[state] + " " + STATE_LABELS[state]],
+          ["Nông dân", h[2] || "--"],
+          ["Trang trại", h[3] || "--"],
+          ["Ngày gieo trồng", h[4] > 0n ? new Date(Number(h[4]) * 1000).toLocaleString("vi-VN") : "--"],
+          ["Nhà máy", h[5] || "--"],
+          ["Nhà phân phối", h[7] || "--"],
+          ["Siêu thị", h[9] || "--"],
+          ["Giá bán", h[11] > 0n ? ethers.formatEther(h[11]) + " ETH" : "--"]
+        ];
+        document.getElementById("traceDetail").innerHTML = rows.map(r =>
+          `<tr><th class='text-muted fw-normal' style='width:40%'>${r[0]}</th><td>${r[1]}</td></tr>`
+        ).join("");
+        document.getElementById("traceResult").classList.remove("d-none");
+      } catch (e) { showToast("Lỗi tra cứu: " + e.message, "danger"); }
+    }
+    //phân quyền
+    function applyRolePermissions(roleIndex) {
+      var allowedPanels = [];
+
+      if (userAddress) {
+        allowedPanels = ["settings"];
+      }
+
+      if (userAddress && contract) {
+        allowedPanels = ["settings", "dashboard", "trace", "admin"];
+
+        if (Number(roleIndex) === 1) allowedPanels.push("farmer");
+        if (Number(roleIndex) === 2) allowedPanels.push("manufacturer");
+        if (Number(roleIndex) === 3) allowedPanels.push("distributor");
+        if (Number(roleIndex) === 4) allowedPanels.push("retailer");
+      }
+
+      document.querySelectorAll("#sidebar .nav-item-custom[data-panel]").forEach(function (item) {
+        var panelName = item.dataset.panel;
+        item.classList.toggle("d-none", !allowedPanels.includes(panelName));
+        if (!allowedPanels.includes(panelName)) item.classList.remove("active");
+      });
+
+      document.querySelectorAll("main .panel").forEach(function (panel) {
+        var panelName = panel.id.replace("panel-", "");
+        panel.classList.toggle("d-none", !allowedPanels.includes(panelName));
+        if (!allowedPanels.includes(panelName)) panel.classList.remove("active");
+      });
+
+      var currentActive = document.querySelector("main .panel.active");
+      var activeName = currentActive ? currentActive.id.replace("panel-", "") : null;
+
+      if (!activeName || !allowedPanels.includes(activeName)) {
+        if (allowedPanels.includes("dashboard")) {
+          showPanel("dashboard");
+        } else if (allowedPanels.includes("settings")) {
+          showPanel("settings");
+        }
+      }
+    }
+
+    function checkContract() {
+      if (!contract) { showToast("Vui lòng kết nối contract trong Cài đặt", "warning"); return false; }
+      if (!signer) { showToast("Vui lòng kết nối MetaMask", "warning"); return false; }
+      return true;
+    }
+
+    async function sendTx(fn, successMsg) {
+      try {
+        showToast("Đang xử lý giao dịch...", "info");
+        var tx = await fn();
+        await tx.wait();
+        showToast(successMsg, "success");
+        loadDashboard();
+      } catch (e) {
+        showToast("Lỗi: " + (e.reason || e.message || "Thất bại"), "danger");
+      }
+    }
+
+    function showToast(msg, type) {
+      var colorMap = { success: "bg-success", danger: "bg-danger", warning: "bg-warning text-dark", info: "bg-info text-dark" };
+      var cls = colorMap[type] || "bg-secondary";
+      var id = "toast-" + Date.now();
+      var container = document.getElementById("toastContainer");
+      container.insertAdjacentHTML("beforeend",
+        `<div id="${id}" class="toast align-items-center text-white border-0 ${cls}" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>`
+      );
+      var el = document.getElementById(id);
+      var toast = new bootstrap.Toast(el, { delay: 4000 });
+      toast.show();
+      el.addEventListener("hidden.bs.toast", () => el.remove());
+    }
+
+    applyRolePermissions(null);
+
+    window.addEventListener("load", async function () {
+      var saved = localStorage.getItem("ftContract");
+      if (saved) document.getElementById("contractAddress").value = saved;
+      if (window.ethereum) {
+        var accounts = await window.ethereum.request({ method: "eth_accounts" });
+        await ensureWalletReady();
+        if (accounts.length > 0) connectWallet();
+      }
+    });
+  </script>
+</body>
+
+</html>

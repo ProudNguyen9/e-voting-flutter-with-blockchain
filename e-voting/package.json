@@ -1,0 +1,37 @@
+{
+  "name": "e-voting",
+  "version": "1.0.0",
+  "description": "E-Voting System with End-to-End Verifiable Blockchain",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "node": "hardhat node",
+    "backend": "node backend/server.js",
+    "backend:dev": "nodemon backend/server.js"
+  },
+  "keywords": ["blockchain", "voting", "ethereum", "e-voting", "hardhat"],
+  "author": "Blockchain Programming Course",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.0.9",
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.3",
+    "@types/node": "^22.19.15",
+    "hardhat": "^3.1.11",
+    "typescript": "~5.8.0",
+    "viem": "^2.47.1",
+    "nodemon": "^3.0.2"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0",
+    "body-parser": "^1.20.2",
+    "crypto-js": "^4.2.0"
+  }
+}

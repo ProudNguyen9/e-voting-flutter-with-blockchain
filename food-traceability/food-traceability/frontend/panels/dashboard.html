@@ -1,0 +1,44 @@
+<div class="panel" id="panel-dashboard">
+    <h4 class="mb-1">
+        <i class="bi bi-speedometer2 me-2 text-success"></i>Dashboard
+    </h4>
+    <p class="text-muted small mb-4">Tổng quan hệ thống truy xuất nguồn gốc</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-success shadow-sm text-center">
+                <div class="card-body py-3">
+                    <div id="stat-total" class="display-6 fw-bold text-success">--</div>
+                    <div class="text-muted small">Tổng sản phẩm</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-primary shadow-sm text-center">
+                <div class="card-body py-3">
+                    <div id="stat-forsale" class="display-6 fw-bold text-primary">--</div>
+                    <div class="text-muted small">Đang bán</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-warning shadow-sm text-center">
+                <div class="card-body py-3">
+                    <div id="stat-shipped" class="display-6 fw-bold text-warning">--</div>
+                    <div class="text-muted small">Đang vận chuyển</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h6 class="text-success text-uppercase fw-bold mb-3" style="font-size:.75rem;">
+                Sản phẩm gần đây
+            </h6>
+            <div id="productList">
+                <p class="text-muted small">Kết nối contract để xem danh sách...</p>
+            </div>
+        </div>
+    </div>
+</div>
