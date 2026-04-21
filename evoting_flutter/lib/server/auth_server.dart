@@ -58,6 +58,34 @@ class AuthServer {
     return ApiResult.fromJson(data);
   }
 
+  Future<Map<String, dynamic>> updateWalletAddress({
+    required String baseUrl,
+    required String token,
+    required String walletAddress,
+  }) async {
+    try {
+      final response = await _client.put(
+        Uri.parse('${_normalizedBaseUrl(baseUrl)}/api/auth/update-wallet'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'walletAddress': walletAddress}),
+      );
+
+      final data = _decodeResponse(
+        response,
+        actionName: 'Cập nhật ví thất bại',
+      );
+      return {
+        'success': true,
+        'message': data['message'] ?? 'Cập nhật thành công',
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   String _normalizedBaseUrl(String baseUrl) {
     return baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
   }

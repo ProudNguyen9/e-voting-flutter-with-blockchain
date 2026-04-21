@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:walletconnect_flutter_v2/walletconnect_flutter_v2.dart';
 
 import '../server/auth_server.dart';
+import '../server/wallet_connect_service.dart';
+import 'home_page.dart';
 
 class WalletSetupPage extends StatefulWidget {
   const WalletSetupPage({
@@ -22,26 +24,11 @@ class WalletSetupPage extends StatefulWidget {
   State<WalletSetupPage> createState() => _WalletSetupPageState();
 }
 
-class _WalletSetupPageState extends State<WalletSetupPage> {
-  static const String _projectId = '46f0649f0b8d05e56b15c3bd8acbf454';
-  static const String _relayUrl = 'wss://relay.walletconnect.com';
-  static const String _redirectScheme = 'evotingflutter://wallet';
-  static const String _walletNamespace = 'eip155';
-  static const String _walletChainId = 'eip155:1';
-
-  static const PairingMetadata _metadata = PairingMetadata(
-    name: 'E-Voting Auth',
-    description: 'Kết nối ví MetaMask cho ứng dụng e-voting',
-    url: 'https://walletconnect.com',
-    icons: ['https://walletconnect.com/walletconnect-logo.png'],
-    redirect: Redirect(native: _redirectScheme),
-  );
-
+class _WalletSetupPageState extends State<WalletSetupPage>
+    with WidgetsBindingObserver {
   final AuthServer _authServer = AuthServer();
   final _formKey = GlobalKey<FormState>();
   final _walletAddressController = TextEditingController();
-
-  Web3App? _web3App;
   String? _walletConnectUri;
   String? _sessionTopic;
   bool _isInitializingWalletKit = false;
@@ -53,17 +40,26 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
       'Bấm kết nối MetaMask, xác nhận trong ví, sau đó quay lại app. Địa chỉ ví sẽ tự động điền vào ô bên dưới.';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _walletAddressController.dispose();
     super.dispose();
   }
 
-  Future<Web3App> _ensureWeb3AppInitialized() async {
-    final existing = _web3App;
-    if (existing != null) {
-      return existing;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isOpeningMetaMask) {
+      unawaited(_syncActiveSessionFromWallet());
     }
+  }
 
+  Future<Web3App> _ensureWeb3AppInitialized() async {
     if (mounted) {
       setState(() {
         _isInitializingWalletKit = true;
@@ -74,14 +70,7 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
     }
 
     try {
-      final app = await Web3App.createInstance(
-        projectId: _projectId,
-        relayUrl: _relayUrl,
-        metadata: _metadata,
-        logLevel: LogLevel.error,
-      );
-      _web3App = app;
-      return app;
+      return await WalletConnectService.ensureInitialized();
     } catch (error) {
       throw Exception(_normalizeWalletConnectError(error));
     } finally {
@@ -121,19 +110,20 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
   }
 
   String _extractWalletAddress(SessionData session) {
-    final namespace = session.namespaces[_walletNamespace];
-    final accounts = namespace?.accounts ?? const <String>[];
-    if (accounts.isEmpty) {
-      throw Exception('MetaMask chưa trả về địa chỉ ví');
-    }
+    return WalletConnectService.extractWalletAddress(session);
+  }
 
-    final account = accounts.first;
-    final parts = account.split(':');
-    return parts.isEmpty ? account : parts.last;
+  String _extractChainId(SessionData session) {
+    return WalletConnectService.extractChainId(session);
+  }
+
+  bool _sessionMatchesExpected(SessionData session) {
+    return WalletConnectService.sessionMatchesExpected(session);
   }
 
   Future<void> _fillWalletAddressFromSession(SessionData session) async {
     final walletAddress = _extractWalletAddress(session);
+    final chainId = _extractChainId(session);
     _walletAddressController.text = walletAddress;
     _sessionTopic = session.topic;
 
@@ -145,8 +135,28 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
       _isOpeningMetaMask = false;
       _isError = false;
       _statusMessage =
-          'Đã kết nối MetaMask thành công qua WalletConnect v2. Địa chỉ ví đã được tự động điền, bạn chỉ cần bấm lưu.';
+          'Đã kết nối MetaMask thành công qua WalletConnect v2 trên mạng $chainId. Địa chỉ ví đã được tự động điền, bạn chỉ cần bấm lưu.';
     });
+  }
+
+  Future<void> _syncActiveSessionFromWallet() async {
+    try {
+      final sessions = await WalletConnectService.getActiveSessions();
+      if (sessions.isEmpty) {
+        return;
+      }
+
+      for (final session in sessions.values) {
+        if (_sessionMatchesExpected(session)) {
+          await _fillWalletAddressFromSession(session);
+          return;
+        }
+      }
+
+      await _fillWalletAddressFromSession(sessions.values.first);
+    } catch (_) {
+      // chờ flow timeout hiện tại xử lý nếu session vẫn chưa sẵn sàng
+    }
   }
 
   String _normalizeWalletConnectError(Object error) {
@@ -179,8 +189,8 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
   }
 
   Future<void> _disconnectCurrentWallet({bool showMessage = true}) async {
-    final app = await _ensureWeb3AppInitialized();
-    final sessions = app.getActiveSessions();
+    await _ensureWeb3AppInitialized();
+    final sessions = await WalletConnectService.getActiveSessions();
 
     if (sessions.isEmpty) {
       _walletAddressController.clear();
@@ -198,12 +208,7 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
       return;
     }
 
-    for (final session in sessions.values) {
-      await app.disconnectSession(
-        topic: session.topic,
-        reason: Errors.getSdkError(Errors.USER_DISCONNECTED),
-      );
-    }
+    await WalletConnectService.disconnectAllSessions();
 
     _walletAddressController.clear();
     _sessionTopic = null;
@@ -267,16 +272,22 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
 
     try {
       final app = await _ensureWeb3AppInitialized();
-      final sessions = app.getActiveSessions();
+      final sessions = await WalletConnectService.getActiveSessions();
       if (sessions.isNotEmpty) {
-        await _fillWalletAddressFromSession(sessions.values.first);
-        return;
+        for (final session in sessions.values) {
+          if (_sessionMatchesExpected(session)) {
+            await _fillWalletAddressFromSession(session);
+            return;
+          }
+        }
+
+        await _disconnectCurrentWallet(showMessage: false);
       }
 
       final response = await app.connect(
         optionalNamespaces: {
-          _walletNamespace: const RequiredNamespace(
-            chains: [_walletChainId],
+          WalletConnectService.walletNamespace: const RequiredNamespace(
+            chains: [WalletConnectService.walletChainId],
             methods: [
               'eth_sendTransaction',
               'personal_sign',
@@ -294,10 +305,23 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
       }
 
       await _launchWalletConnectUri(uri.toString());
+      unawaited(_syncActiveSessionFromWallet());
 
       final session = await response.session.future.timeout(
         const Duration(minutes: 2),
-        onTimeout: () {
+        onTimeout: () async {
+          final sessionsAfterTimeout =
+              await WalletConnectService.getActiveSessions();
+          for (final session in sessionsAfterTimeout.values) {
+            if (_sessionMatchesExpected(session)) {
+              return session;
+            }
+          }
+
+          if (sessionsAfterTimeout.isNotEmpty) {
+            return sessionsAfterTimeout.values.first;
+          }
+
           throw Exception(
             'Hết thời gian chờ xác nhận từ MetaMask. Hãy mở lại MetaMask và bấm Connect/Approve.',
           );
@@ -360,6 +384,19 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
       });
 
       _showSnackBar(result.message, isError: false);
+
+      final walletAddress = _walletAddressController.text.trim();
+
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => HomePage(
+            baseUrl: widget.baseUrl,
+            token: widget.token,
+            email: widget.email,
+            walletAddress: walletAddress,
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -461,7 +498,7 @@ class _WalletSetupPageState extends State<WalletSetupPage> {
                         const SizedBox(height: 12),
                         _InfoTile(
                           label: 'WalletConnect Project ID',
-                          value: _projectId,
+                          value: WalletConnectService.projectId,
                         ),
                         const SizedBox(height: 20),
                         Container(

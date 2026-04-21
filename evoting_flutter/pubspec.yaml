@@ -13,6 +13,9 @@ dependencies:
   http: ^1.2.2
   url_launcher: ^6.3.1
   walletconnect_flutter_v2: ^2.4.1
+  convert: ^3.1.2
+  crypto: ^3.0.7
+  web3dart: ^2.7.3
 
 dev_dependencies:
   flutter_test:

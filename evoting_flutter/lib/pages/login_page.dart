@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../model/login_request.dart';
 import '../server/auth_server.dart';
+import 'home_page.dart';
 import 'voter_register_page.dart';
 import 'wallet_setup_page.dart';
 
@@ -67,6 +68,24 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       _showSnackBar(result.message, isError: false);
+
+      final walletAddress = (result.user['walletAddress'] ?? '')
+          .toString()
+          .trim();
+
+      if (walletAddress.isNotEmpty) {
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => HomePage(
+              baseUrl: _baseUrlController.text.trim(),
+              token: result.token,
+              email: _emailController.text.trim(),
+              walletAddress: walletAddress,
+            ),
+          ),
+        );
+        return;
+      }
 
       await Navigator.of(context).push(
         MaterialPageRoute(

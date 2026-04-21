@@ -90,7 +90,7 @@ packages:
     source: hosted
     version: "2.1.0"
   convert:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: convert
       sha256: b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68
@@ -98,7 +98,7 @@ packages:
     source: hosted
     version: "3.1.2"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf
@@ -662,7 +662,7 @@ packages:
     source: hosted
     version: "0.5.1"
   web3dart:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web3dart
       sha256: "885e5e8f0cc3c87c09f160a7fce6279226ca41316806f7ece2001959c62ecced"
