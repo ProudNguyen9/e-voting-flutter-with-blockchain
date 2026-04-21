@@ -527,6 +527,72 @@ contract EVoting {
         electionExists(_electionId)
         inPhase(_electionId, ElectionPhase.Decryption)
     {
+        _decryptAndFinalize(_electionId, _candidateIds);
+    }
+
+    function finalizeElectionWithTally(
+        uint256 _electionId,
+        bytes32 _shuffleProof,
+        uint256[] memory _candidateIds
+    ) public onlyAdmin electionExists(_electionId) {
+        ElectionPhase currentPhase = elections[_electionId].phase;
+
+        if (currentPhase == ElectionPhase.Casting) {
+            require(
+                block.timestamp > elections[_electionId].endTime,
+                "Chua het thoi gian bo phieu"
+            );
+            elections[_electionId].phase = ElectionPhase.Anonymization;
+            emit PhaseChanged(
+                _electionId,
+                ElectionPhase.Anonymization,
+                block.timestamp
+            );
+            currentPhase = ElectionPhase.Anonymization;
+        }
+
+        if (currentPhase == ElectionPhase.Anonymization) {
+            uint256 ballotCount = encryptedBallots[_electionId].length;
+            require(ballotCount > 0, "Khong co phieu nao");
+
+            for (uint256 i = 0; i < ballotCount; i++) {
+                encryptedBallots[_electionId][i].isShuffled = true;
+            }
+
+            auditTrail[_electionId].push(
+                AuditProof({
+                    ballotHash: keccak256(
+                        abi.encodePacked(_electionId, ballotCount)
+                    ),
+                    shuffleProof: _shuffleProof,
+                    decryptionProof: bytes32(0),
+                    timestamp: block.timestamp
+                })
+            );
+
+            emit BallotsShuffled(_electionId, ballotCount, _shuffleProof);
+
+            elections[_electionId].phase = ElectionPhase.Decryption;
+            emit PhaseChanged(
+                _electionId,
+                ElectionPhase.Decryption,
+                block.timestamp
+            );
+            currentPhase = ElectionPhase.Decryption;
+        }
+
+        require(
+            currentPhase == ElectionPhase.Decryption,
+            "Khong dung giai doan"
+        );
+
+        _decryptAndFinalize(_electionId, _candidateIds);
+    }
+
+    function _decryptAndFinalize(
+        uint256 _electionId,
+        uint256[] memory _candidateIds
+    ) internal {
         uint256 ballotCount = encryptedBallots[_electionId].length;
         require(_candidateIds.length == ballotCount, "So luong khong khop");
 

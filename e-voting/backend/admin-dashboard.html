@@ -1151,11 +1151,13 @@
             "function endVoting(uint256)",
             "function shuffleBallots(uint256,bytes32)",
             "function decryptAndTally(uint256,uint256[])",
+            "function finalizeElectionWithTally(uint256,bytes32,uint256[])",
             "function getResults(uint256) view returns (string,uint8,uint256,uint256,uint256)",
             "function getCandidate(uint256,uint256) view returns (string,string,string,uint256)",
             "function getAllCandidates(uint256) view returns (uint256[],string[],uint256[])",
             "function hasVoterVoted(uint256,address) view returns (bool)",
             "function getBallotCount(uint256) view returns (uint256)",
+            "function encryptedBallots(uint256,uint256) view returns (uint256,address,bytes,bytes32,uint256,bool,bool)",
             "function getElectionInfo(uint256) view returns (string,string,uint256,uint256,uint8,uint256,uint256,uint256)",
             "function phaseToString(uint8) pure returns (string)",
             "function getAuditTrail(uint256) view returns (tuple(bytes32,bytes32,bytes32,uint256)[])",
@@ -1491,6 +1493,8 @@
                                 : (isEnded
                                     ? 'Đã kết thúc'
                                     : (isInsufficientBeforeStart ? 'Chưa đủ điều kiện' : 'Kích hoạt on-chain')));
+                        const canStartVoting = Boolean(election.is_onchain) && !isCancelled && !isEnded && readiness.hasMinimumRequirements && now >= startTime;
+                        const canFinalizeElection = Boolean(election.is_onchain) && !isCancelled && isEnded;
 
                         return `
                         <tr>
@@ -1507,6 +1511,10 @@
                                 <div class="actions-stack">
                                     ${!isCancelled ? `
                                         <button class="small-btn warning" onclick="openOnchainDialog(${election.id}, '${String(election.title || '').replace(/'/g, "\\'")}')" ${onchainDisabled ? 'disabled' : ''}>${onchainText}</button>
+                                    ` : ''}
+                                    ${election.is_onchain ? `
+                                        <button class="small-btn secondary" onclick="startElectionVoting(${election.election_id}, '${String(election.title || '').replace(/'/g, "\\'")}')" ${canStartVoting ? '' : 'disabled'}>Bắt đầu bỏ phiếu</button>
+                                        <button class="small-btn secondary" onclick="finalizeElectionResults(${election.election_id}, '${String(election.title || '').replace(/'/g, "\\'")}')" ${canFinalizeElection ? '' : 'disabled'}>Giải mã & đếm phiếu</button>
                                     ` : ''}
                                     <button class="small-btn light" onclick="openElectionRegistrations(${election.id}, '${String(election.title || '').replace(/'/g, "\\'")}', ${election.election_id}, ${election.is_onchain ? 'true' : 'false'}, '${election.start_time}')">Quản lý cử tri</button>
                                     <button class="small-btn light" onclick="openCandidatesSection('${safeElection}')">Quản lý ứng cử viên</button>
@@ -1679,6 +1687,114 @@
                     alert('Bạn đã từ chối transaction trong MetaMask');
                 } else if (error.code === -32603) {
                     alert('Lỗi RPC: ' + (error.data?.message || error.message));
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        async function startElectionVoting(blockchainElectionId, electionTitle) {
+            if (!contract || !signer) {
+                alert('Vui lòng kết nối MetaMask trước!');
+                return;
+            }
+
+            if (!blockchainElectionId) {
+                alert('Cuộc bầu cử chưa có blockchain election ID hợp lệ.');
+                return;
+            }
+
+            if (!confirm(`Xác nhận bắt đầu giai đoạn bỏ phiếu cho cuộc bầu cử "${electionTitle}"?\n\nMetaMask sẽ yêu cầu bạn xác nhận transaction.`)) {
+                return;
+            }
+
+            try {
+                alert('Đang gửi transaction bắt đầu bỏ phiếu...\nVui lòng xác nhận trong MetaMask.');
+                const tx = await contract.startVoting(blockchainElectionId);
+                alert('Transaction đã được gửi!\nĐang chờ xác nhận...');
+                await tx.wait();
+                alert(`✅ Đã bắt đầu giai đoạn bỏ phiếu thành công!\n\nTx hash: ${tx.hash}`);
+                await loadElections();
+            } catch (error) {
+                console.error('Lỗi bắt đầu bỏ phiếu:', error);
+                if (error.code === 4001) {
+                    alert('Bạn đã từ chối transaction trong MetaMask');
+                } else if (error.code === -32603 || error.code === 'CALL_EXCEPTION') {
+                    alert('Lỗi blockchain: ' + (error.data?.message || error.reason || error.message));
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        async function finalizeElectionResults(blockchainElectionId, electionTitle) {
+            if (!contract || !signer) {
+                alert('Vui lòng kết nối MetaMask trước!');
+                return;
+            }
+
+            if (!blockchainElectionId) {
+                alert('Cuộc bầu cử chưa có blockchain election ID hợp lệ.');
+                return;
+            }
+
+            if (!confirm(`Xác nhận giải mã và đếm phiếu cho cuộc bầu cử "${electionTitle}"?\n\nMetaMask sẽ chỉ yêu cầu bạn xác nhận 1 transaction để hoàn tất toàn bộ quy trình.`)) {
+                return;
+            }
+
+            try {
+                const electionInfo = await contract.getElectionInfo(blockchainElectionId);
+                const currentPhase = Number(electionInfo[4]);
+
+                if (currentPhase === 4) {
+                    alert('Cuộc bầu cử này đã hoàn tất giải mã và đếm phiếu rồi.');
+                    return;
+                }
+
+                if (currentPhase !== 1 && currentPhase !== 2 && currentPhase !== 3) {
+                    alert(`Không thể chạy giải mã ở phase hiện tại (${currentPhase}).`);
+                    return;
+                }
+
+                const ballotCountBn = await contract.getBallotCount(blockchainElectionId);
+                const ballotCount = ballotCountBn.toNumber();
+                if (ballotCount <= 0) {
+                    alert('Không có lá phiếu nào để giải mã và đếm.');
+                    return;
+                }
+
+                const candidateIds = [];
+                for (let index = 0; index < ballotCount; index++) {
+                    const ballot = await contract.encryptedBallots(blockchainElectionId, index);
+                    const encodedVote = ballot[2];
+                    const decodedVote = ethers.utils.toUtf8String(encodedVote).replace(/\0/g, '').trim();
+                    const candidateId = Number.parseInt(decodedVote, 10);
+
+                    if (!Number.isInteger(candidateId) || candidateId <= 0) {
+                        throw new Error(`Không giải mã được candidateId ở lá phiếu #${index + 1}: ${decodedVote || '(rỗng)'}`);
+                    }
+
+                    candidateIds.push(candidateId);
+                }
+
+                const shuffleProof = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+                alert('Đang gửi 1 transaction gộp để hoàn tất giải mã và đếm phiếu...\nVui lòng xác nhận trong MetaMask.');
+                const finalizeTx = await contract.finalizeElectionWithTally(
+                    blockchainElectionId,
+                    shuffleProof,
+                    candidateIds
+                );
+                alert('Transaction đã được gửi!\nĐang chờ xác nhận...');
+                await finalizeTx.wait();
+
+                alert(`✅ Đã hoàn tất giải mã và đếm phiếu!\n\nSố lá phiếu đã xử lý: ${candidateIds.length}\nTx hash: ${finalizeTx.hash}`);
+                await loadElections();
+            } catch (error) {
+                console.error('Lỗi giải mã & đếm phiếu:', error);
+                if (error.code === 4001) {
+                    alert('Bạn đã từ chối transaction trong MetaMask');
+                } else if (error.code === -32603 || error.code === 'CALL_EXCEPTION') {
+                    alert('Lỗi blockchain: ' + (error.data?.message || error.reason || error.message));
                 } else {
                     alert('Lỗi: ' + error.message);
                 }

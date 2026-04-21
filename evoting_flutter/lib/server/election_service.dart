@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../model/api_result.dart';
 import '../model/candidate.dart';
+import '../model/election_result.dart';
 import '../model/election_summary.dart';
 
 class ElectionService {
@@ -144,6 +145,29 @@ class ElectionService {
     );
 
     return ApiResult.fromJson(data);
+  }
+
+  Future<ElectionResult> getElectionResults({
+    required String baseUrl,
+    required String token,
+    required int electionId,
+  }) async {
+    final response = await _client.get(
+      Uri.parse(
+        '${_normalizedBaseUrl(baseUrl)}/api/elections/$electionId/results',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final data = _decodeResponse(
+      response,
+      actionName: 'Lấy kết quả bầu cử thất bại',
+    );
+
+    return ElectionResult.fromJson(data);
   }
 
   Future<Map<String, dynamic>> getContractInfo({

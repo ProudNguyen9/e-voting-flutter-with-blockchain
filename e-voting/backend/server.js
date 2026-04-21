@@ -1301,6 +1301,123 @@ app.get('/api/elections/:electionId/candidates', authenticateToken, async (req, 
     }
 });
 
+app.get('/api/elections/:electionId/results', authenticateToken, async (req, res) => {
+    try {
+        const { electionId } = req.params;
+        const pool = await getPool();
+
+        const electionResult = await pool.request()
+            .input('electionId', sql.Int, electionId)
+            .query(`
+                SELECT
+                    e.*,
+                    ISNULL(candidate_stats.candidate_count, 0) AS candidate_count,
+                    ISNULL(voter_stats.approved_voter_count, 0) AS approved_voter_count
+                FROM elections e
+                LEFT JOIN (
+                    SELECT election_db_id, COUNT(*) AS candidate_count
+                    FROM election_candidates
+                    GROUP BY election_db_id
+                ) candidate_stats ON candidate_stats.election_db_id = e.id
+                LEFT JOIN (
+                    SELECT election_id, COUNT(*) AS approved_voter_count
+                    FROM election_registrations
+                    WHERE is_approved = 1
+                    GROUP BY election_id
+                ) voter_stats ON voter_stats.election_id = e.id
+                WHERE e.id = @electionId
+            `);
+
+        if (electionResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Không tìm thấy cuộc bầu cử' });
+        }
+
+        const election = electionResult.recordset[0];
+        const now = new Date();
+        const endTime = new Date(election.end_time);
+
+        if (now <= endTime) {
+            return res.status(400).json({ error: 'Cuộc bầu cử chưa kết thúc để xem kết quả' });
+        }
+
+        const candidatesDbResult = await pool.request()
+            .input('electionId', sql.Int, electionId)
+            .query(`
+                SELECT *
+                FROM election_candidates
+                WHERE election_db_id = @electionId
+                ORDER BY created_at ASC, id ASC
+            `);
+
+        let totalVotes = 0;
+        let phase = 'OFFCHAIN';
+        let candidates = candidatesDbResult.recordset.map(candidate => ({
+            candidateId: candidate.id,
+            blockchainCandidateId: candidate.blockchain_candidate_id || 0,
+            name: candidate.candidate_name,
+            description: candidate.candidate_description || '',
+            imageUrl: candidate.image_url || '',
+            voteCount: 0
+        }));
+
+        if (election.is_onchain && election.election_id) {
+            const blockchainElectionId = Number(election.election_id);
+            const [chainResults, chainCandidates] = await Promise.all([
+                contract.getResults(blockchainElectionId),
+                contract.getAllCandidates(blockchainElectionId)
+            ]);
+
+            totalVotes = Number(chainResults[3] || 0);
+            const phaseMap = {
+                0: 'Configuration',
+                1: 'Casting',
+                2: 'Anonymization',
+                3: 'Decryption',
+                4: 'Completed'
+            };
+            phase = phaseMap[Number(chainResults[1] || 0)] || 'UNKNOWN';
+
+            const ids = Array.from(chainCandidates[0] || []);
+            const names = Array.from(chainCandidates[1] || []);
+            const votes = Array.from(chainCandidates[2] || []);
+
+            candidates = candidatesDbResult.recordset.map(candidate => {
+                const blockchainCandidateId = Number(candidate.blockchain_candidate_id || 0);
+                const index = ids.findIndex(id => Number(id) === blockchainCandidateId);
+                return {
+                    candidateId: candidate.id,
+                    blockchainCandidateId,
+                    name: candidate.candidate_name || names[index] || '',
+                    description: candidate.candidate_description || '',
+                    imageUrl: candidate.image_url || '',
+                    voteCount: index >= 0 ? Number(votes[index] || 0) : 0
+                };
+            });
+        }
+
+        candidates.sort((a, b) => b.voteCount - a.voteCount || a.candidateId - b.candidateId);
+
+        const isFinalized = phase === 'Completed';
+
+        res.json({
+            electionId: election.id,
+            blockchainElectionId: Number(election.election_id || 0),
+            title: election.title,
+            totalVotes,
+            totalVoters: Number(election.approved_voter_count || 0),
+            phase,
+            isFinalized,
+            message: isFinalized
+                ? 'Kết quả đã được giải mã và chốt trên blockchain.'
+                : 'Cuộc bầu cử đã có phiếu nhưng chưa hoàn tất bước giải mã/đếm phiếu trên blockchain nên số phiếu theo từng ứng cử viên chưa khả dụng.',
+            candidates
+        });
+    } catch (error) {
+        console.error('Lỗi lấy kết quả cuộc bầu cử:', error);
+        res.status(500).json({ error: error.reason || error.message || 'Lỗi server khi lấy kết quả' });
+    }
+});
+
 // ============= ELECTION REGISTRATION APIs =============
 
 // User đăng ký tham gia cuộc bầu cử (3 ngày trước khi bắt đầu)

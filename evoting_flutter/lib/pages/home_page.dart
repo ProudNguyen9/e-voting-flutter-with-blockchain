@@ -5,6 +5,7 @@ import '../server/election_service.dart';
 import '../server/auth_server.dart';
 import 'election_detail_page.dart';
 import 'election_register_page.dart';
+import 'election_result_page.dart';
 import 'login_page.dart';
 import 'vote_page.dart';
 import 'wallet_setup_page.dart';
@@ -982,7 +983,7 @@ class _ElectionMenuSheet extends StatelessWidget {
               _MenuOption(
                 icon: Icons.how_to_vote,
                 title: 'Bỏ phiếu',
-                subtitle: 'Xác thực PIN và ký giao dịch trực tiếp bằng ví',
+                subtitle: 'Xác thực PIN và gửi phiếu bầu mã hóa về server',
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -1010,9 +1011,14 @@ class _ElectionMenuSheet extends StatelessWidget {
                 subtitle: 'Kết quả bầu cử và thống kê',
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Chức năng xem kết quả đang phát triển'),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ElectionResultPage(
+                        election: election,
+                        baseUrl: baseUrl,
+                        token: token,
+                      ),
                     ),
                   );
                 },
