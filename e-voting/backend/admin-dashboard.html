@@ -1,0 +1,2741 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVoting Admin Dashboard</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --surface: rgba(255, 255, 255, 0.78);
+            --surface-strong: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --primary: #2563eb;
+            --primary-strong: #1d4ed8;
+            --accent: #0ea5e9;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --danger-bg: #fee2e2;
+            --danger-text: #b91c1c;
+            --info-bg: #eff6ff;
+            --info-text: #1d4ed8;
+            --warning-bg: #fff7ed;
+            --warning-text: #9a3412;
+            --border: rgba(148, 163, 184, 0.2);
+            --border-strong: rgba(148, 163, 184, 0.36);
+            --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.1);
+            --shadow-md: 0 14px 32px rgba(15, 23, 42, 0.07);
+            --radius-xl: 28px;
+            --radius-lg: 22px;
+            --radius-md: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 26%),
+                radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.1), transparent 22%),
+                linear-gradient(180deg, #fbfdff 0%, var(--bg) 100%);
+            padding: 28px;
+        }
+
+        .dashboard-shell {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 22px;
+            align-items: start;
+        }
+
+        .sidebar,
+        .main-shell {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 28px;
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            display: grid;
+            gap: 22px;
+        }
+
+        .brand {
+            display: grid;
+            gap: 12px;
+        }
+
+        .brand-badge,
+        .section-badge {
+            width: fit-content;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--primary-strong);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .brand h1 {
+            font-size: 28px;
+            line-height: 1.08;
+        }
+
+        .brand p,
+        .metric-card span,
+        .user-chip small,
+        .section-header p,
+        .helper-list li,
+        .panel-card p,
+        .table-title,
+        .empty-state {
+            color: var(--muted);
+        }
+
+        .nav-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            border: none;
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--text);
+            text-align: left;
+            padding: 16px 18px;
+            border-radius: 18px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            transition: 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.12));
+            color: var(--primary-strong);
+            border-color: rgba(37, 99, 235, 0.14);
+        }
+
+        .user-chip {
+            padding: 18px;
+            border-radius: 20px;
+            background: rgba(37, 99, 235, 0.06);
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .user-chip strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+
+        .sidebar-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .ghost-btn,
+        .danger-btn,
+        .primary-btn,
+        .small-btn {
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            font-weight: 800;
+            transition: 0.2s ease;
+        }
+
+        .ghost-btn,
+        .danger-btn,
+        .primary-btn {
+            height: 50px;
+            padding: 0 18px;
+            font-size: 14px;
+        }
+
+        .ghost-btn {
+            background: rgba(255, 255, 255, 0.84);
+            color: var(--primary-strong);
+            border: 1px solid rgba(37, 99, 235, 0.12);
+        }
+
+        .ghost-btn:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        .danger-btn {
+            background: #fff1f2;
+            color: #be123c;
+            border: 1px solid rgba(244, 63, 94, 0.12);
+        }
+
+        .danger-btn:hover {
+            background: #ffe4e6;
+        }
+
+        .main-shell {
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+        }
+
+        .topbar {
+            padding: 26px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .topbar h2 {
+            font-size: 34px;
+            line-height: 1.08;
+            margin: 10px 0 8px;
+        }
+
+        .topbar p {
+            color: var(--muted);
+        }
+
+        .token-pill {
+            max-width: 360px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .token-pill strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--primary-strong);
+        }
+
+        .token-pill span {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            word-break: break-all;
+            font-family: Consolas, monospace;
+        }
+
+        .content {
+            padding: 28px;
+            display: grid;
+            gap: 22px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            background: var(--surface-strong);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .metric-card strong {
+            display: block;
+            font-size: 26px;
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+
+        .section {
+            display: none;
+            gap: 22px;
+        }
+
+        .section.active {
+            display: grid;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+        }
+
+        .section-header h3 {
+            font-size: 28px;
+            line-height: 1.08;
+            margin: 10px 0 8px;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: 1.08fr 0.92fr;
+            gap: 22px;
+        }
+
+        .election-form-layout {
+            grid-template-columns: minmax(0, 760px);
+            justify-content: center;
+        }
+
+        .panel-card {
+            background: var(--surface-strong);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .panel-card h4 {
+            font-size: 22px;
+            line-height: 1.1;
+            margin: 14px 0 10px;
+        }
+
+        .banner {
+            padding: 16px 18px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .banner.info {
+            background: var(--info-bg);
+            color: var(--info-text);
+        }
+
+        .banner.warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+            border: 1px solid var(--border-strong);
+            background: #fff;
+            border-radius: 18px;
+            min-height: 54px;
+            padding: 14px 18px;
+            font-size: 15px;
+            color: var(--text);
+            outline: none;
+            transition: 0.2s ease;
+        }
+
+        .field textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+            border-color: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+            color: #fff;
+            box-shadow: 0 18px 30px rgba(37, 99, 235, 0.16);
+        }
+
+        .primary-btn:hover,
+        .small-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .small-btn {
+            height: 38px;
+            padding: 0 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+            color: #fff;
+            font-size: 12px;
+            box-shadow: 0 10px 18px rgba(37, 99, 235, 0.16);
+        }
+
+        .small-btn.secondary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+            box-shadow: 0 10px 18px rgba(14, 165, 233, 0.18);
+        }
+
+        .small-btn.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+            box-shadow: 0 10px 18px rgba(245, 158, 11, 0.2);
+        }
+
+        .small-btn.info {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            box-shadow: 0 10px 18px rgba(6, 182, 212, 0.2);
+        }
+
+        .small-btn.light {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #0f172a;
+            box-shadow: none;
+        }
+
+        .helper-list {
+            display: grid;
+            gap: 12px;
+            list-style: none;
+            margin-top: 8px;
+        }
+
+        .helper-list li {
+            padding: 14px 16px;
+            background: #f8fbff;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 18px;
+        }
+
+        .response {
+            margin-top: 18px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            display: none;
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .response.success {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .response.error {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+        }
+
+        .table-wrap,
+        .empty-state {
+            margin-top: 18px;
+            background: var(--surface-strong);
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .table-title {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border);
+            background: #fbfdff;
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+            text-align: left;
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        td {
+            word-break: break-word;
+        }
+
+        th {
+            background: #f8fbff;
+            color: #334155;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        tr:hover td {
+            background: #fcfdff;
+        }
+
+        .empty-state {
+            padding: 22px;
+            color: var(--muted);
+        }
+
+        .election-list-shell {
+            display: grid;
+            gap: 22px;
+        }
+
+        .election-list-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+            gap: 22px;
+        }
+
+        .hero-card {
+            position: relative;
+            overflow: hidden;
+            padding: 28px;
+            border-radius: 28px;
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.26), transparent 28%),
+                linear-gradient(135deg, #1d4ed8 0%, #2563eb 48%, #0ea5e9 100%);
+            color: #eff6ff;
+            box-shadow: 0 24px 44px rgba(37, 99, 235, 0.24);
+        }
+
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            inset: auto -40px -60px auto;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .hero-card .section-badge {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .hero-card h3 {
+            font-size: 34px;
+            line-height: 1.05;
+            margin: 16px 0 12px;
+            max-width: 540px;
+        }
+
+        .hero-card p {
+            max-width: 620px;
+            color: rgba(239, 246, 255, 0.84);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .hero-meta,
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .hero-meta {
+            margin-top: 18px;
+        }
+
+        .hero-pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #dbeafe;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .hero-actions {
+            margin-top: 24px;
+        }
+
+        .hero-card .primary-btn,
+        .hero-card .ghost-btn {
+            box-shadow: none;
+        }
+
+        .hero-card .primary-btn {
+            background: #fff;
+            color: var(--primary-strong);
+        }
+
+        .hero-card .ghost-btn {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.16);
+        }
+
+        .hero-card .ghost-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-stack {
+            display: grid;
+            gap: 16px;
+        }
+
+        .stat-card {
+            min-height: 170px;
+            padding: 24px;
+            border-radius: 26px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 38px;
+            line-height: 1;
+            margin: 18px 0 10px;
+            color: var(--text);
+        }
+
+        .stat-card span {
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-strong);
+        }
+
+        .stat-card p {
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .list-table-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, #f8fbff 100%);
+            border-radius: 28px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .list-table-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 22px 24px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .list-table-head h4 {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .list-table-head p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .table-toolbar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .table-counter {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--primary-strong);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .table-host {
+            padding: 0 24px 24px;
+        }
+
+        .table-host .table-wrap,
+        .table-host .empty-state {
+            margin-top: 0;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .table-host td:nth-child(3) {
+            min-width: 220px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .table-host td:nth-child(4) {
+            min-width: 260px;
+            color: #475569;
+        }
+
+        .table-host td:nth-child(5),
+        .table-host td:nth-child(6) {
+            min-width: 170px;
+        }
+
+        .wallet-cell {
+            min-width: 260px;
+            max-width: 320px;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.55;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        .actions-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .candidate-page-shell {
+            display: grid;
+            gap: 22px;
+        }
+
+        .candidate-page-grid {
+            display: grid;
+            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .candidate-context {
+            display: grid;
+            gap: 14px;
+        }
+
+        .candidate-meta {
+            display: grid;
+            gap: 10px;
+            padding: 18px;
+            border-radius: 20px;
+            background: #f8fbff;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .candidate-meta strong {
+            font-size: 20px;
+            line-height: 1.3;
+        }
+
+        .candidate-meta span {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .inline-form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .secondary-btn {
+            height: 50px;
+            padding: 0 18px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 18px;
+            background: #fff;
+            color: #334155;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .candidate-table-note {
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 1100px) {
+
+            .dashboard-shell,
+            .section-grid,
+            .metrics,
+            .candidate-page-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 14px;
+            }
+
+            .sidebar,
+            .topbar,
+            .content,
+            .panel-card {
+                padding: 18px;
+            }
+
+            .main-shell,
+            .sidebar,
+            .panel-card,
+            .table-wrap,
+            .empty-state {
+                border-radius: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    <!-- Thư viện ethers.js cho MetaMask -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-badge">Admin Console</span>
+                <h1>EVoting Dashboard</h1>
+
+            </div>
+
+            <div class="user-chip">
+                <small>Phiên đăng nhập</small>
+                <strong id="admin-name">Admin</strong>
+                <small id="admin-role">Administrator</small>
+            </div>
+
+            <div class="nav-list">
+                <button class="nav-btn active" onclick="showSection('overview', this)">Tổng quan</button>
+                <button class="nav-btn" onclick="showSection('election', this); loadNextElectionId();">Tạo
+                    election</button>
+                <button class="nav-btn" onclick="showSection('elections-list-section', this); loadElections();">Danh
+                    sách election</button>
+            </div>
+
+            <div class="sidebar-actions">
+                <button class="danger-btn" onclick="logoutAdmin()">Đăng xuất</button>
+            </div>
+        </aside>
+
+        <main class="main-shell">
+            <header class="topbar">
+                <div>
+                    <span class="section-badge">Dashboard</span>
+                    <h2>Xin chào quản trị viên</h2>
+                </div>
+                <button id="connect-metamask-btn" class="primary-btn" onclick="connectMetaMask()"
+                    style="display: none;">
+                    🦊 Kết nối MetaMask
+                </button>
+                <div id="metamask-status"
+                    style="display: none; padding: 10px 16px; background: #dcfce7; color: #166534; border-radius: 12px; font-size: 14px; font-weight: 600; align-items: center; gap: 10px;">
+                    <span>✓ Đã kết nối: <span id="connected-address"></span></span>
+                    <button onclick="disconnectMetaMask()"
+                        style="padding: 4px 12px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        Ngắt kết nối
+                    </button>
+                </div>
+            </header>
+
+            <div class="content">
+                <section id="overview" class="section active">
+                    <div class="metrics">
+                        <div class="metric-card">
+                            <strong>01</strong>
+                            <span>Phiên admin</span>
+                        </div>
+                        <div class="metric-card">
+                            <strong>02</strong>
+                            <span>Luồng chính</span>
+                        </div>
+                        <div class="metric-card">
+                            <strong>03</strong>
+                            <span>Approve voter</span>
+                        </div>
+                        <div class="metric-card">
+                            <strong>04</strong>
+                            <span>Create election</span>
+                        </div>
+                    </div>
+
+                    <div class="section-grid">
+                        <div class="panel-card">
+                            <span class="section-badge">Election List</span>
+                            <h4>Danh sách cuộc bầu cử</h4>
+                            <p>Xem nhanh các cuộc bầu cử đã tạo và truy cập khu phê duyệt cử tri theo
+                                từng cuộc bầu cử.
+                            </p>
+
+                            <div class="action-row">
+                                <button class="primary-btn"
+                                    onclick="showSection('elections-list-section', document.querySelectorAll('.nav-btn')[2]); loadElections();">Mở
+                                    danh sách cuộc bầu cử</button>
+                            </div>
+                        </div>
+
+                        <div class="panel-card">
+                            <span class="section-badge">Setup</span>
+                            <h4>Tạo cuộc bầu cử</h4>
+                            <p>Tạo metadata cuộc bầu cử ngay trên dashboard.</p>
+
+                            <div class="action-row">
+                                <button class="primary-btn"
+                                    onclick="showSection('election', document.querySelectorAll('.nav-btn')[1]); loadNextElectionId();">Mở
+                                    form tạo election</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="election-voters-section" class="section" style="display: none;">
+                    <div class="section-header">
+                        <div>
+                            <span class="section-badge">Voters Management</span>
+                            <h3 id="election-voters-title">Quản lý cử tri</h3>
+                            <p id="election-voters-subtitle"></p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="ghost-btn" onclick="loadElectionVotersPage()">Làm mới</button>
+                            <button class="ghost-btn" onclick="backToElectionList()">Quay lại danh sách</button>
+                        </div>
+                    </div>
+
+                    <!-- Phần cử tri chờ phê duyệt -->
+                    <div class="panel-card">
+                        <h4 style="margin-bottom: 16px;">📋 Cử tri chờ phê duyệt</h4>
+                        <div class="banner info">Sau khi phê duyệt, hệ thống sẽ lưu vào database. Cử tri sẽ được đăng ký
+                            lên blockchain khi bạn nhấn nút "Đăng ký cử tri lên Blockchain".</div>
+                        <div id="election-voters-pending-list"></div>
+                    </div>
+
+                    <!-- Phần cử tri đã phê duyệt -->
+                    <div class="panel-card" style="margin-top: 22px;">
+                        <h4 style="margin-bottom: 16px;">✅ Danh sách cử tri đã phê duyệt</h4>
+                        <div id="election-voters-approved-list"></div>
+                    </div>
+                </section>
+
+                <section id="election" class="section">
+                    <div class="section-header">
+                        <div>
+                            <span class="section-badge">Election</span>
+                            <h3>Tạo cuộc bầu cử</h3>
+
+                        </div>
+                        <button class="ghost-btn" onclick="loadNextElectionId()">Làm mới ID</button>
+                    </div>
+
+                    <div class="section-grid election-form-layout">
+                        <div class="panel-card">
+                            <span class="section-badge">Form</span>
+                            <h4>Tạo cuộc bầu cử</h4>
+
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="election-id-preview">Election ID</label>
+                                    <input type="text" id="election-id-preview" placeholder="Tự động tạo sau khi lưu"
+                                        readonly>
+                                </div>
+                                <div class="field">
+                                    <label for="election-title">Tiêu đề</label>
+                                    <input type="text" id="election-title" placeholder="Bầu cử chủ tịch">
+                                </div>
+                                <div class="field full">
+                                    <label for="election-desc">Mô tả</label>
+                                    <textarea id="election-desc" placeholder="Mô tả cuộc bầu cử"></textarea>
+                                </div>
+                                <div class="field">
+                                    <label for="election-start">Bắt đầu</label>
+                                    <input type="datetime-local" id="election-start">
+                                </div>
+                                <div class="field">
+                                    <label for="election-end">Kết thúc</label>
+                                    <input type="datetime-local" id="election-end">
+                                </div>
+                            </div>
+
+                            <div class="action-row">
+                                <button class="primary-btn" onclick="createElection()">Tạo election</button>
+                            </div>
+
+                            <div id="create-election-response" class="response"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="elections-list-section" class="section">
+                    <div class="section-header">
+                        <div>
+                            <span class="section-badge">Election List</span>
+                            <h3>Danh sách cuộc bầu cử</h3>
+                            <p>Xem toàn bộ các cuộc bầu cử đã lưu trong backend.</p>
+                        </div>
+                        <button class="ghost-btn" onclick="loadElections()">Làm mới</button>
+                    </div>
+
+                    <div class="panel-card">
+                        <div id="elections-list"></div>
+                    </div>
+                </section>
+
+                <section id="candidates-section" class="section">
+                    <div class="section-header">
+                        <div>
+                            <span class="section-badge">Candidates</span>
+                            <h3>Trang ứng cử viên</h3>
+                            <p>Quản lý danh sách ứng cử viên của từng cuộc bầu cử: thêm, sửa và xóa</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="register-candidates-blockchain-btn" class="primary-btn"
+                                onclick="registerCandidatesOnchainFromCandidatePage()" style="display: none;">
+                                🔗 Đăng ký ứng cử viên lên Blockchain
+                            </button>
+                            <button class="ghost-btn" onclick="backToElectionList()">Quay lại danh sách cuộc bầu
+                                cử</button>
+                        </div>
+                    </div>
+
+                    <div class="candidate-page-shell">
+                        <div class="candidate-page-grid">
+                            <div class="panel-card candidate-context">
+                                <span class="section-badge">Election Context</span>
+                                <h4>Thông tin cuộc bầu cử</h4>
+                                <div class="candidate-meta">
+                                    <strong id="candidate-election-title">Chưa chọn cuộc bầu cử</strong>
+                                    <span id="candidate-election-id">Election ID: --</span>
+                                    <span id="candidate-election-time">Thời gian: --</span>
+                                </div>
+                            </div>
+
+                            <div class="panel-card" id="candidate-form-panel">
+                                <span class="section-badge">Form</span>
+                                <h4>Thêm / sửa ứng cử viên</h4>
+
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="candidate-name">Tên ứng cử viên</label>
+                                        <input type="text" id="candidate-name" placeholder="Nguyễn Văn A">
+                                    </div>
+                                    <div class="field">
+                                        <label for="candidate-image">Ảnh đại diện</label>
+                                        <input type="text" id="candidate-image"
+                                            placeholder="https://example.com/avatar.jpg">
+                                    </div>
+                                    <div class="field full">
+                                        <label for="candidate-description">Mô tả</label>
+                                        <textarea id="candidate-description"
+                                            placeholder="Thông tin ngắn về ứng cử viên"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="inline-form-actions">
+                                    <button class="primary-btn" onclick="saveCandidateForm()">Lưu ứng cử
+                                        viên</button>
+                                    <button class="secondary-btn" onclick="resetCandidateForm()">Làm mới
+                                        form</button>
+                                </div>
+
+                                <div id="candidate-form-response" class="response"></div>
+                            </div>
+                        </div>
+
+                        <div class="panel-card">
+                            <span class="section-badge">Candidate List</span>
+                            <h4>Danh sách ứng cử viên</h4>
+                            <div id="candidates-list"></div>
+                            <div class="candidate-table-note">
+                                Bạn có thể sửa hoặc xóa ứng cử viên trước khi cuộc bầu cử bắt đầu.
+                                Sau khi đăng ký lên blockchain, ứng cử viên sẽ bị khóa và không thể chỉnh sửa.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        const adminToken = localStorage.getItem('evoting_admin_token') || '';
+        const adminInfo = JSON.parse(localStorage.getItem('evoting_admin_info') || '{}');
+        let selectedElectionForCandidates = null;
+        let editingCandidateId = null;
+        let currentCandidates = [];
+
+        // Biến global cho MetaMask
+        let provider = null;
+        let signer = null;
+        let contract = null;
+        let userAddress = null;
+        let contractAddress = null;
+        let rpcUrl = null;
+
+        // Contract ABI - đầy đủ các hàm cần thiết
+        const CONTRACT_ABI = [
+            "function admin() view returns (address)",
+            "function electionCounter() view returns (uint256)",
+            "function ballotCounter() view returns (uint256)",
+            "function elections(uint256) view returns (uint256,string,string,uint256,uint256,uint8,address,bool,uint256,uint256)",
+            "function candidates(uint256,uint256) view returns (uint256,string,string,string,uint256,bool)",
+            "function candidateCounters(uint256) view returns (uint256)",
+            "function hasVoted(uint256,address) view returns (bool)",
+            "function isRegisteredVoter(uint256,address) view returns (bool)",
+            "function createElection(string,string,uint256,uint256) returns (uint256)",
+            "function addCandidate(uint256,string,string,string)",
+            "function addCandidatesBatch(uint256,string[],string[],string[])",
+            "function registerVoter(uint256,address)",
+            "function registerVotersBatch(uint256,address[])",
+            "function startVoting(uint256)",
+            "function castVote(uint256,bytes,bytes32)",
+            "function endVoting(uint256)",
+            "function shuffleBallots(uint256,bytes32)",
+            "function decryptAndTally(uint256,uint256[])",
+            "function getResults(uint256) view returns (string,uint8,uint256,uint256,uint256)",
+            "function getCandidate(uint256,uint256) view returns (string,string,string,uint256)",
+            "function getAllCandidates(uint256) view returns (uint256[],string[],uint256[])",
+            "function hasVoterVoted(uint256,address) view returns (bool)",
+            "function getBallotCount(uint256) view returns (uint256)",
+            "function getElectionInfo(uint256) view returns (string,string,uint256,uint256,uint8,uint256,uint256,uint256)",
+            "function phaseToString(uint8) pure returns (string)",
+            "function getAuditTrail(uint256) view returns (tuple(bytes32,bytes32,bytes32,uint256)[])",
+            "function verifyBallotCommitment(uint256,uint256,bytes32) view returns (bool)",
+            "event ElectionCreated(uint256 indexed electionId, string title, address indexed creator, uint256 startTime, uint256 endTime)",
+            "event CandidateAdded(uint256 indexed electionId, uint256 indexed candidateId, string name)",
+            "event VoterRegistered(uint256 indexed electionId, address indexed voter)",
+            "event VoteCast(uint256 indexed electionId, address indexed voter, bytes32 commitment, uint256 timestamp)",
+            "event PhaseChanged(uint256 indexed electionId, uint8 newPhase, uint256 timestamp)",
+            "event BallotsShuffled(uint256 indexed electionId, uint256 ballotCount, bytes32 shuffleProof)",
+            "event VoteDecrypted(uint256 indexed electionId, uint256 ballotIndex, uint256 candidateId)",
+            "event ElectionCompleted(uint256 indexed electionId, uint256 totalVotes)"
+        ];
+
+        if (!adminToken) {
+            window.location.replace('./admin-login.html');
+        }
+
+        document.getElementById('admin-name').textContent = adminInfo.username || 'Admin';
+        document.getElementById('admin-role').textContent = adminInfo.email || 'Administrator';
+
+        // Kiểm tra MetaMask khi trang load
+        window.addEventListener('load', () => {
+            if (typeof window.ethereum !== 'undefined') {
+                document.getElementById('connect-metamask-btn').style.display = 'block';
+            } else {
+                // Không hiển thị nút nếu không có MetaMask
+                console.warn('MetaMask chưa được cài đặt');
+            }
+        });
+
+        // Hàm kết nối MetaMask
+        async function connectMetaMask() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    alert('MetaMask chưa được cài đặt!');
+                    return;
+                }
+
+                // Lấy thông tin contract từ backend
+                const configResponse = await fetch(`${API_URL}/contract-info`);
+                const config = await configResponse.json();
+                contractAddress = config.contractAddress;
+                rpcUrl = config.rpcUrl;
+
+                // Kết nối MetaMask
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                // Khởi tạo contract
+                contract = new ethers.Contract(contractAddress, CONTRACT_ABI, signer);
+
+                // Lưu trạng thái kết nối vào localStorage
+                localStorage.setItem('metamask_connected', 'true');
+                localStorage.setItem('metamask_address', userAddress);
+
+                // Cập nhật UI
+                document.getElementById('connect-metamask-btn').style.display = 'none';
+                document.getElementById('metamask-status').style.display = 'block';
+                document.getElementById('connected-address').textContent =
+                    userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+
+                console.log('MetaMask đã kết nối:', userAddress);
+                console.log('Contract address:', contractAddress);
+
+            } catch (error) {
+                console.error('Lỗi kết nối MetaMask:', error);
+                alert('Không thể kết nối MetaMask: ' + error.message);
+            }
+        }
+
+        // Hàm ngắt kết nối MetaMask
+        function disconnectMetaMask() {
+            provider = null;
+            signer = null;
+            contract = null;
+            userAddress = null;
+
+            // Xóa trạng thái kết nối khỏi localStorage
+            localStorage.removeItem('metamask_connected');
+            localStorage.removeItem('metamask_address');
+
+            document.getElementById('connect-metamask-btn').style.display = 'block';
+            document.getElementById('metamask-status').style.display = 'none';
+
+            console.log('Đã ngắt kết nối MetaMask');
+            alert('Đã ngắt kết nối MetaMask. Bạn có thể kết nối lại bất cứ lúc nào.');
+        }
+
+        // Hàm tự động kết nối lại MetaMask khi trang load
+        async function autoConnectMetaMask() {
+            const wasConnected = localStorage.getItem('metamask_connected');
+            if (wasConnected === 'true' && typeof window.ethereum !== 'undefined') {
+                try {
+                    // Kiểm tra xem MetaMask có accounts đã kết nối không
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        await connectMetaMask();
+                    } else {
+                        // Nếu không có accounts, xóa trạng thái đã lưu
+                        localStorage.removeItem('metamask_connected');
+                        localStorage.removeItem('metamask_address');
+                    }
+                } catch (error) {
+                    console.error('Lỗi tự động kết nối MetaMask:', error);
+                    localStorage.removeItem('metamask_connected');
+                    localStorage.removeItem('metamask_address');
+                }
+            }
+        }
+
+        // Lắng nghe sự kiện thay đổi account
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', async (accounts) => {
+                if (accounts.length === 0) {
+                    // User đã ngắt kết nối
+                    provider = null;
+                    signer = null;
+                    contract = null;
+                    userAddress = null;
+
+                    // Xóa trạng thái kết nối khỏi localStorage
+                    localStorage.removeItem('metamask_connected');
+                    localStorage.removeItem('metamask_address');
+
+                    document.getElementById('connect-metamask-btn').style.display = 'block';
+                    document.getElementById('metamask-status').style.display = 'none';
+                } else {
+                    // User đã chuyển account
+                    await connectMetaMask();
+                }
+            });
+        }
+
+        function showSection(sectionId, buttonEl) {
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(button => button.classList.remove('active'));
+
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.add('active');
+            targetSection.style.display = ''; // Xóa inline style để CSS class hoạt động
+
+            if (buttonEl) {
+                buttonEl.classList.add('active');
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('evoting_admin_token');
+            localStorage.removeItem('evoting_admin_info');
+            window.location.replace('./admin-login.html');
+        }
+
+        function showResponse(elementId, data, isError = false) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.className = 'response ' + (isError ? 'error' : 'success');
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function getAuthHeaders(includeJson = false) {
+            const headers = {
+                'Authorization': `Bearer ${adminToken}`
+            };
+
+            if (includeJson) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            return headers;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderEmptyState(message) {
+            return `<div class="empty-state">${escapeHtml(message)}</div>`;
+        }
+
+        function renderTable(title, headers, rowsHtml) {
+            return `
+                <div class="table-wrap">
+                    <div class="table-title">${escapeHtml(title)}</div>
+                    <table>
+                        <thead>
+                            <tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function formatDateTime(value) {
+            if (!value) {
+                return '--';
+            }
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return '--';
+            }
+
+            return date.toLocaleString('vi-VN');
+        }
+
+        function getElectionReadiness(election) {
+            const candidateCount = Number(election.candidate_count || 0);
+            const approvedVoterCount = Number(election.approved_voter_count || 0);
+            const missingCandidates = Math.max(0, 2 - candidateCount);
+            const missingVoters = Math.max(0, 3 - approvedVoterCount);
+            const hasMinimumRequirements = candidateCount >= 2 && approvedVoterCount >= 3;
+
+            return {
+                candidateCount,
+                approvedVoterCount,
+                missingCandidates,
+                missingVoters,
+                hasMinimumRequirements
+            };
+        }
+
+        function renderOnchainBadge(election) {
+            const now = new Date();
+            const startTime = new Date(election.start_time);
+            const endTime = new Date(election.end_time);
+            const readiness = getElectionReadiness(election);
+
+            // Sắp diễn ra: Chưa đến giờ bắt đầu
+            if (now < startTime) {
+                if (!election.is_onchain && !readiness.hasMinimumRequirements) {
+                    return `<span style="color: #d97706; font-weight: 600;">⏳ Chưa đủ điều kiện</span><div style="margin-top: 4px;"><small style="color: #92400e;">Cần thêm ${readiness.missingCandidates} ứng cử viên và ${readiness.missingVoters} cử tri được duyệt</small></div>`;
+                }
+                return '<span style="color: #3b82f6; font-weight: 600;">📅 Sắp diễn ra</span>';
+            }
+
+            // Đã hủy: Đã đến giờ bắt đầu mà vẫn không đủ điều kiện tối thiểu
+            if (!readiness.hasMinimumRequirements) {
+                return `<span style="color: #dc2626; font-weight: 600;">❌ Đã hủy</span><div style="margin-top: 4px;"><small style="color: #991b1b;">Không đủ tối thiểu 2 ứng cử viên và 3 cử tri được duyệt</small></div>`;
+            }
+
+            // Đã kết thúc: Đã lên blockchain VÀ đã qua giờ kết thúc
+            if (now > endTime) {
+                const activatedAt = election.onchain_activated_at
+                    ? `<div style="margin-top: 4px;"><small style="color: #6b7280;">Kích hoạt: ${escapeHtml(formatDateTime(election.onchain_activated_at))}</small></div>`
+                    : '';
+                const txHash = election.onchain_tx_hash
+                    ? `<div style="margin-top: 4px;"><small style="color: #2563eb; font-family: monospace; word-break: break-all;">Tx: ${escapeHtml(election.onchain_tx_hash)}</small></div>`
+                    : '';
+                return `<span style="color: #6b7280; font-weight: 600;">🏁 Đã kết thúc</span>${activatedAt}${txHash}`;
+            }
+
+            // Chưa on-chain nhưng vẫn còn thời gian/đủ điều kiện
+            if (!election.is_onchain) {
+                return '<span style="color: #3b82f6; font-weight: 600;">📅 Sắp diễn ra</span>';
+            }
+
+            // Đang diễn ra: Đã lên blockchain VÀ chưa kết thúc
+            const activatedAt = election.onchain_activated_at
+                ? `<div style="margin-top: 4px;"><small style="color: #6b7280;">Kích hoạt: ${escapeHtml(formatDateTime(election.onchain_activated_at))}</small></div>`
+                : '';
+            const txHash = election.onchain_tx_hash
+                ? `<div style="margin-top: 4px;"><small style="color: #2563eb; font-family: monospace; word-break: break-all;">Tx: ${escapeHtml(election.onchain_tx_hash)}</small></div>`
+                : '';
+            return `<span style="color: #16a34a; font-weight: 600;">✅ Đang diễn ra</span>${activatedAt}${txHash}`;
+        }
+
+        async function loadNextElectionId() {
+            try {
+                const response = await fetch(`${API_URL}/admin/elections/next-id`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                const result = await response.json();
+
+                if (response.ok && result.nextElectionId) {
+                    document.getElementById('election-id-preview').value = String(result.nextElectionId);
+                } else {
+                    document.getElementById('election-id-preview').value = '1';
+                }
+            } catch (error) {
+                document.getElementById('election-id-preview').value = '1';
+            }
+        }
+
+        async function loadElections() {
+            try {
+                console.log('Loading elections with token:', adminToken ? 'Token exists' : 'No token');
+                const response = await fetch(`${API_URL}/admin/elections`, {
+                    headers: getAuthHeaders()
+                });
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response data:', result);
+
+                if (response.ok && result.elections && result.elections.length > 0) {
+                    const rowsHtml = result.elections.map(election => {
+                        const now = new Date();
+                        const startTime = new Date(election.start_time);
+                        const endTime = new Date(election.end_time);
+                        const readiness = getElectionReadiness(election);
+
+                        const isCancelled = now >= startTime && !readiness.hasMinimumRequirements;
+                        const isEnded = now > endTime && readiness.hasMinimumRequirements;
+                        const isInsufficientBeforeStart = now < startTime && !readiness.hasMinimumRequirements;
+
+                        const safeElection = encodeURIComponent(JSON.stringify({
+                            id: election.id,
+                            election_id: election.election_id,
+                            title: election.title,
+                            description: election.description || '',
+                            start_time: election.start_time,
+                            end_time: election.end_time,
+                            is_onchain: election.is_onchain,
+                            candidate_count: election.candidate_count || 0,
+                            approved_voter_count: election.approved_voter_count || 0,
+                            onchain_tx_hash: election.onchain_tx_hash || '',
+                            onchain_activated_at: election.onchain_activated_at || null
+                        }));
+
+                        const onchainDisabled = election.is_onchain || isCancelled || isEnded || isInsufficientBeforeStart;
+                        const onchainText = election.is_onchain
+                            ? 'Đã on-chain'
+                            : (isCancelled
+                                ? 'Đã hủy'
+                                : (isEnded
+                                    ? 'Đã kết thúc'
+                                    : (isInsufficientBeforeStart ? 'Chưa đủ điều kiện' : 'Kích hoạt on-chain')));
+
+                        return `
+                        <tr>
+                            <td>${election.id}</td>
+                            <td>${election.election_id}</td>
+                            <td>${escapeHtml(election.title)}</td>
+                            <td>${escapeHtml(election.description || '')}</td>
+                            <td>${escapeHtml(formatDateTime(election.start_time))}</td>
+                            <td>${escapeHtml(formatDateTime(election.end_time))}</td>
+                            <td>${election.candidate_count || 0}</td>
+                            <td>${election.approved_voter_count || 0}</td>
+                            <td>${renderOnchainBadge(election)}</td>
+                            <td>
+                                <div class="actions-stack">
+                                    ${!isCancelled ? `
+                                        <button class="small-btn warning" onclick="openOnchainDialog(${election.id}, '${String(election.title || '').replace(/'/g, "\\'")}')" ${onchainDisabled ? 'disabled' : ''}>${onchainText}</button>
+                                    ` : ''}
+                                    <button class="small-btn light" onclick="openElectionRegistrations(${election.id}, '${String(election.title || '').replace(/'/g, "\\'")}', ${election.election_id}, ${election.is_onchain ? 'true' : 'false'}, '${election.start_time}')">Quản lý cử tri</button>
+                                    <button class="small-btn light" onclick="openCandidatesSection('${safeElection}')">Quản lý ứng cử viên</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    }).join('');
+
+                    document.getElementById('elections-list').innerHTML = renderTable(
+                        'Danh sách cuộc bầu cử',
+                        ['ID', 'Election ID', 'Tiêu đề', 'Mô tả', 'Bắt đầu', 'Kết thúc', 'Số ứng cử viên', 'Cử tri duyệt', 'Trạng thái on-chain', 'Thao tác'],
+                        rowsHtml
+                    );
+                } else {
+                    console.log('No elections found or response not ok');
+                    document.getElementById('elections-list').innerHTML = renderEmptyState('Chưa có cuộc bầu cử nào.');
+                }
+            } catch (error) {
+                console.error('Error loading elections:', error);
+                document.getElementById('elections-list').innerHTML = renderEmptyState('Không tải được danh sách cuộc bầu cử: ' + error.message);
+            } finally {
+                loadNextElectionId();
+            }
+        }
+
+        async function openOnchainDialog(electionDbId, electionTitle) {
+            // Kiểm tra MetaMask đã kết nối chưa
+            if (!contract || !signer) {
+                alert('Vui lòng kết nối MetaMask trước!');
+                return;
+            }
+
+            if (!confirm(`Xác nhận kích hoạt on-chain cho cuộc bầu cử "${electionTitle}"?\n\nLưu ý: MetaMask sẽ yêu cầu bạn xác nhận và thanh toán gas fee.`)) {
+                return;
+            }
+
+            try {
+                // Lấy thông tin đầy đủ của election từ database
+                const electionResponse = await fetch(`${API_URL}/admin/elections`, {
+                    headers: getAuthHeaders()
+                });
+                const electionsData = await electionResponse.json();
+
+                if (!electionResponse.ok || !electionsData.elections) {
+                    alert('Không thể lấy thông tin cuộc bầu cử');
+                    return;
+                }
+
+                const election = electionsData.elections.find(e => e.id === electionDbId);
+                if (!election) {
+                    alert('Không tìm thấy cuộc bầu cử');
+                    return;
+                }
+
+                // Chuyển đổi thời gian sang Unix timestamp (giây)
+                const startTime = Math.floor(new Date(election.start_time).getTime() / 1000);
+                const endTime = Math.floor(new Date(election.end_time).getTime() / 1000);
+
+                console.log('Tạo election on-chain:', {
+                    title: election.title,
+                    description: election.description,
+                    startTime,
+                    endTime
+                });
+
+                // Gọi contract qua MetaMask
+                alert('Đang gửi transaction lên blockchain...\nVui lòng xác nhận trong MetaMask.');
+
+                const tx = await contract.createElection(
+                    election.title,
+                    election.description,
+                    startTime,
+                    endTime
+                );
+
+                alert('Transaction đã được gửi!\nĐang chờ xác nhận...');
+                console.log('Transaction hash:', tx.hash);
+
+                // Đợi transaction được confirm
+                const receipt = await tx.wait();
+                console.log('Transaction confirmed:', receipt);
+                console.log('Receipt events:', receipt.events);
+
+                // Lấy blockchainElectionId từ contract
+                let blockchainElectionId = null;
+
+                // Cách 1: Tìm event ElectionCreated
+                const electionCreatedEvent = receipt.events?.find(e => e.event === 'ElectionCreated');
+                if (electionCreatedEvent) {
+                    console.log('Found ElectionCreated event:', electionCreatedEvent);
+                    console.log('Event args:', electionCreatedEvent.args);
+
+                    // Thử lấy từ args
+                    if (electionCreatedEvent.args?.electionId) {
+                        blockchainElectionId = electionCreatedEvent.args.electionId.toNumber();
+                    } else if (electionCreatedEvent.args?.[0]) {
+                        // Thử lấy từ index 0
+                        blockchainElectionId = electionCreatedEvent.args[0].toNumber();
+                    }
+                }
+
+                // Cách 2: Parse event bằng contract interface
+                if (!blockchainElectionId && receipt.logs && receipt.logs.length > 0) {
+                    console.log('Trying to parse logs with contract interface...');
+                    for (const log of receipt.logs) {
+                        try {
+                            const parsedLog = contract.interface.parseLog(log);
+                            console.log('Parsed log:', parsedLog);
+                            if (parsedLog.name === 'ElectionCreated') {
+                                blockchainElectionId = parsedLog.args.electionId.toNumber();
+                                console.log('Got election ID from parsed log:', blockchainElectionId);
+                                break;
+                            }
+                        } catch (e) {
+                            // Log này không phải từ contract của chúng ta
+                            continue;
+                        }
+                    }
+                }
+
+                // Cách 3: Query electionCounter từ contract
+                if (!blockchainElectionId) {
+                    console.log('Could not parse event, querying electionCounter from contract...');
+                    try {
+                        const counter = await contract.electionCounter();
+                        blockchainElectionId = counter.toNumber();
+                        console.log('Got election ID from electionCounter:', blockchainElectionId);
+                    } catch (e) {
+                        console.error('Error querying electionCounter:', e);
+                        alert('Transaction đã thành công nhưng không lấy được Election ID từ contract!\n\nTx hash: ' + tx.hash + '\n\nVui lòng kiểm tra Hardhat console và cập nhật thủ công.');
+                        return;
+                    }
+                }
+
+                console.log('Blockchain Election ID:', blockchainElectionId);
+
+                // Cập nhật database qua backend API
+                const updateResponse = await fetch(`${API_URL}/admin/elections/${electionDbId}/update-onchain-status`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(true),
+                    body: JSON.stringify({
+                        blockchainElectionId: blockchainElectionId,
+                        txHash: tx.hash
+                    })
+                });
+
+                const updateResult = await updateResponse.json();
+
+                if (!updateResponse.ok) {
+                    console.error('Lỗi cập nhật database:', updateResult);
+                    alert('Transaction thành công nhưng không cập nhật được database!\nTx hash: ' + tx.hash);
+                    return;
+                }
+
+                alert(`✅ Kích hoạt on-chain thành công!\n\nBlockchain Election ID: ${blockchainElectionId}\nTx hash: ${tx.hash}`);
+                await loadElections();
+
+                if (selectedElectionForCandidates && selectedElectionForCandidates.id === electionDbId) {
+                    selectedElectionForCandidates.is_onchain = 1;
+                    selectedElectionForCandidates.election_id = blockchainElectionId;
+                    selectedElectionForCandidates.onchain_tx_hash = tx.hash;
+                    await loadCandidatesForSelectedElection();
+                }
+
+            } catch (error) {
+                console.error('Lỗi kích hoạt on-chain:', error);
+
+                if (error.code === 4001) {
+                    alert('Bạn đã từ chối transaction trong MetaMask');
+                } else if (error.code === -32603) {
+                    alert('Lỗi RPC: ' + (error.data?.message || error.message));
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        async function registerCandidatesOnchain(electionDbId, electionTitle) {
+            try {
+                const candidatesResponse = await fetch(`${API_URL}/admin/elections/${electionDbId}/candidates`, {
+                    headers: getAuthHeaders()
+                });
+                const candidatesData = await candidatesResponse.json();
+
+                if (!candidatesResponse.ok || !candidatesData.candidates || candidatesData.candidates.length === 0) {
+                    alert('Không có ứng cử viên nào để đăng ký');
+                    return;
+                }
+
+                const unregisteredCandidates = candidatesData.candidates.filter(candidate => !candidate.blockchain_candidate_id);
+                if (unregisteredCandidates.length === 0) {
+                    alert('Tất cả ứng cử viên đã được đăng ký lên blockchain');
+                    return;
+                }
+
+                await registerCandidateBatch(unregisteredCandidates, {
+                    electionDbId,
+                    electionTitle,
+                    blockchainElectionId: candidatesData.election.election_id,
+                    refreshSelectedPage: selectedElectionForCandidates && selectedElectionForCandidates.id === electionDbId
+                });
+            } catch (error) {
+                console.error('Lỗi đăng ký ứng cử viên:', error);
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function registerVotersOnchain(electionDbId, electionTitle) {
+            // Kiểm tra MetaMask đã kết nối chưa
+            if (!contract || !signer) {
+                alert('Vui lòng kết nối MetaMask trước!');
+                return;
+            }
+
+            if (!confirm(`Xác nhận đăng ký cử tri lên blockchain cho cuộc bầu cử "${electionTitle}"?\n\nLưu ý: MetaMask sẽ yêu cầu bạn xác nhận và thanh toán gas fee.`)) {
+                return;
+            }
+
+            try {
+                // Lấy thông tin election từ database
+                const electionResponse = await fetch(`${API_URL}/admin/elections`, {
+                    headers: getAuthHeaders()
+                });
+                const electionsData = await electionResponse.json();
+
+                if (!electionResponse.ok || !electionsData.elections) {
+                    alert('Không thể lấy thông tin cuộc bầu cử');
+                    return;
+                }
+
+                const election = electionsData.elections.find(e => e.id === electionDbId);
+                if (!election || !election.election_id) {
+                    alert('Cuộc bầu cử chưa được kích hoạt on-chain hoặc không tìm thấy');
+                    return;
+                }
+
+                const blockchainElectionId = election.election_id;
+
+                // Lấy danh sách voters đã được phê duyệt
+                const votersResponse = await fetch(`${API_URL}/admin/approved-voters?election_id=${electionDbId}`, {
+                    headers: getAuthHeaders()
+                });
+                const votersData = await votersResponse.json();
+
+                if (!votersResponse.ok || !votersData.voters || votersData.voters.length === 0) {
+                    alert('Không có cử tri nào đã được phê duyệt để đăng ký');
+                    return;
+                }
+
+                const voters = votersData.voters;
+                const voterAddresses = voters.map(v => v.wallet_address);
+
+                console.log(`Đăng ký ${voters.length} cử tri lên blockchain...`);
+                console.log('Voter addresses:', voterAddresses);
+
+                alert(`Đang gửi transaction đăng ký ${voters.length} cử tri...\nVui lòng xác nhận trong MetaMask.`);
+
+                // Gọi contract.registerVotersBatch()
+                const tx = await contract.registerVotersBatch(
+                    blockchainElectionId,
+                    voterAddresses
+                );
+
+                alert('Transaction đã được gửi!\nĐang chờ xác nhận...');
+                console.log('Transaction hash:', tx.hash);
+
+                // Đợi transaction được confirm
+                const receipt = await tx.wait();
+                console.log('Transaction confirmed:', receipt);
+
+                // Cập nhật trạng thái trong database
+                try {
+                    const voterIds = voters.map(v => v.user_id);
+                    const updateResponse = await fetch(`${API_URL}/admin/elections/${electionDbId}/mark-voters-onchain`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(true),
+                        body: JSON.stringify({
+                            voterIds: voterIds,
+                            txHash: tx.hash
+                        })
+                    });
+
+                    if (updateResponse.ok) {
+                        console.log('Đã cập nhật trạng thái voters trong database');
+                    } else {
+                        console.warn('Không thể cập nhật trạng thái voters trong database');
+                    }
+                } catch (dbError) {
+                    console.error('Lỗi cập nhật database:', dbError);
+                }
+
+                alert(`✅ Đã đăng ký ${voters.length} cử tri lên blockchain thành công!\n\nTx hash: ${tx.hash}`);
+                await loadElections();
+                await loadElectionVotersPage();
+
+            } catch (error) {
+                console.error('Lỗi đăng ký cử tri:', error);
+
+                if (error.code === 4001) {
+                    alert('Bạn đã từ chối transaction trong MetaMask');
+                } else if (error.code === -32603) {
+                    alert('Lỗi RPC: ' + (error.data?.message || error.message));
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        function backToElectionList() {
+            showSection('elections-list-section');
+            loadElections();
+        }
+
+        // Biến global để lưu thông tin cuộc bầu cử hiện tại
+        let currentElectionForVoters = null;
+
+        // Gộp 2 hàm thành 1
+        function openElectionRegistrations(electionDbId, electionTitle, blockchainElectionId, isOnchain, startTime) {
+            currentElectionForVoters = {
+                db_id: electionDbId,
+                title: electionTitle,
+                blockchain_id: blockchainElectionId,
+                is_onchain: isOnchain,
+                start_time: startTime
+            };
+
+            document.getElementById('election-voters-title').textContent = `Quản lý cử tri - ${electionTitle}`;
+            document.getElementById('election-voters-subtitle').textContent = `Election ID: ${blockchainElectionId}`;
+
+            // Kiểm tra xem cuộc bầu cử đã bắt đầu chưa
+            const now = new Date();
+            const electionStartTime = new Date(startTime);
+            const hasStarted = now >= electionStartTime;
+
+            // Hiển thị nút đăng ký blockchain nếu election đã on-chain VÀ chưa bắt đầu
+            const registerBtn = document.getElementById('register-voters-blockchain-btn');
+            if (registerBtn) {
+                registerBtn.style.display = (isOnchain && !hasStarted) ? 'block' : 'none';
+            }
+
+            showSection('election-voters-section');
+            loadElectionVotersPage();
+        }
+
+        // Alias để tương thích với code cũ
+        function openApprovedVotersList(electionDbId, electionTitle, blockchainElectionId, isOnchain, startTime) {
+            openElectionRegistrations(electionDbId, electionTitle, blockchainElectionId, isOnchain, startTime);
+        }
+
+        // Hàm mới để load cả 2 danh sách
+        async function loadElectionVotersPage() {
+            await loadElectionVotersPending();
+            await loadElectionVotersApproved();
+        }
+
+        // Load danh sách cử tri đã phê duyệt
+        async function loadElectionVotersApproved() {
+            if (!currentElectionForVoters) {
+                document.getElementById('election-voters-approved-list').innerHTML = renderEmptyState('Chưa chọn cuộc bầu cử.');
+                return;
+            }
+
+            try {
+                const url = `${API_URL}/admin/approved-voters?election_id=${currentElectionForVoters.db_id}`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                const result = await response.json();
+
+                if (response.ok && result.voters && result.voters.length > 0) {
+                    // Sắp xếp: cử tri chưa đăng ký lên đầu
+                    const sortedVoters = result.voters.sort((a, b) => {
+                        if (a.registered_to_blockchain === b.registered_to_blockchain) return 0;
+                        return a.registered_to_blockchain ? 1 : -1;
+                    });
+
+                    const rowsHtml = sortedVoters.map(voter => {
+                        const isRegistered = voter.registered_to_blockchain;
+                        const checkboxDisabled = isRegistered ? 'disabled' : '';
+                        const checkboxChecked = '';
+
+                        return `
+                        <tr>
+                            <td><input type="checkbox" class="voter-checkbox" data-voter-id="${voter.user_id}" data-wallet="${voter.wallet_address}" ${checkboxDisabled} ${checkboxChecked}></td>
+                            <td>${voter.id}</td>
+                            <td>${voter.full_name}</td>
+                            <td>${voter.email}</td>
+                            <td class="wallet-cell" title="${escapeHtml(voter.wallet_address || '')}">${escapeHtml(voter.wallet_address || '')}</td>
+                            <td>${new Date(voter.registered_at).toLocaleString('vi-VN')}</td>
+                            <td>${new Date(voter.approved_at).toLocaleString('vi-VN')}</td>
+                            <td>${isRegistered ? '<span style="color: #16a34a; font-weight: 600;">✓ Đã đăng ký</span>' : '<span style="color: #6b7280;">Chưa đăng ký</span>'}</td>
+                        </tr>
+                    `;
+                    }).join('');
+
+                    // Kiểm tra xem có cử tri chưa đăng ký không
+                    const hasUnregisteredVoters = sortedVoters.some(v => !v.registered_to_blockchain);
+
+                    // Kiểm tra xem cuộc bầu cử đã bắt đầu chưa
+                    const now = new Date();
+                    const electionStartTime = currentElectionForVoters?.start_time ? new Date(currentElectionForVoters.start_time) : null;
+                    const hasStarted = electionStartTime && now >= electionStartTime;
+                    const showRegisterButton = currentElectionForVoters?.is_onchain && !hasStarted && hasUnregisteredVoters;
+
+                    const tableHtml = renderTable(
+                        `Danh sách cử tri đã phê duyệt (${result.voters.length})`,
+                        ['Chọn', 'ID', 'Họ tên', 'Email', 'Ví', 'Thời gian đăng ký', 'Thời gian phê duyệt', 'Trạng thái'],
+                        rowsHtml
+                    );
+
+                    const buttonHtml = showRegisterButton ? `
+                        <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+                            <button id="register-selected-voters-btn" class="primary-btn" onclick="registerSelectedVotersOnchain()">
+                                🔗 Đăng ký cử tri đã chọn lên Blockchain
+                            </button>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="select-all-voters-checkbox" onchange="toggleAllVoterCheckboxes(this.checked)">
+                                <span>Chọn tất cả (chưa đăng ký)</span>
+                            </label>
+                            <span id="selected-voters-count" style="color: #6b7280; font-size: 14px;">0 cử tri được chọn</span>
+                        </div>
+                    ` : '';
+
+                    document.getElementById('election-voters-approved-list').innerHTML = tableHtml + buttonHtml;
+
+                    // Thêm event listener cho các checkbox
+                    document.querySelectorAll('.voter-checkbox').forEach(cb => {
+                        cb.addEventListener('change', updateSelectedVotersCount);
+                    });
+                    updateSelectedVotersCount();
+                } else {
+                    document.getElementById('election-voters-approved-list').innerHTML = renderEmptyState('Chưa có cử tri nào được phê duyệt cho cuộc bầu cử này.');
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        // Load danh sách cử tri chờ phê duyệt
+        async function loadElectionVotersPending() {
+            if (!currentElectionForVoters) {
+                document.getElementById('election-voters-pending-list').innerHTML = renderEmptyState('Chưa chọn cuộc bầu cử.');
+                return;
+            }
+
+            try {
+                const url = `${API_URL}/admin/pending-registrations?election_id=${currentElectionForVoters.db_id}`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                const result = await response.json();
+
+                if (response.ok && result.registrations && result.registrations.length > 0) {
+                    const rowsHtml = result.registrations.map(reg => `
+                        <tr>
+                            <td><input type="checkbox" class="voter-checkbox" value="${reg.id}"></td>
+                            <td>${reg.id}</td>
+                            <td>${reg.full_name}</td>
+                            <td>${reg.email}</td>
+                            <td class="wallet-cell" title="${escapeHtml(reg.wallet_address || '')}">${escapeHtml(reg.wallet_address || '')}</td>
+                            <td>${new Date(reg.registered_at).toLocaleString('vi-VN')}</td>
+                            <td><button class="small-btn" onclick="approveRegistration(${reg.id})">Phê duyệt</button></td>
+                        </tr>
+                    `).join('');
+
+                    const tableHtml = `
+                        <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                            <button class="primary-btn" onclick="approveSelectedVoters()">Phê duyệt đã chọn</button>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" id="select-all-voters" onchange="toggleAllVoters(this.checked)">
+                                <span>Chọn tất cả</span>
+                            </label>
+                            <span id="selected-count" style="color: #6b7280; font-size: 14px;"></span>
+                        </div>
+                        ${renderTable(
+                        `Cử tri chờ phê duyệt (${result.registrations.length})`,
+                        ['', 'ID', 'Họ tên', 'Email', 'Ví', 'Thời gian đăng ký', ''],
+                        rowsHtml
+                    )}
+                    `;
+
+                    document.getElementById('election-voters-pending-list').innerHTML = tableHtml;
+                    updateSelectedCount();
+
+                    // Add event listeners to checkboxes
+                    document.querySelectorAll('.voter-checkbox').forEach(cb => {
+                        cb.addEventListener('change', updateSelectedCount);
+                    });
+                } else {
+                    document.getElementById('election-voters-pending-list').innerHTML = renderEmptyState('Không có cử tri nào chờ phê duyệt cho cuộc bầu cử này.');
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        // Alias để tương thích
+        async function loadElectionVoters() {
+            await loadElectionVotersPage();
+        }
+
+        async function loadApprovedVoters() {
+            await loadElectionVotersApproved();
+        }
+
+        function toggleAllVoters(checked) {
+            document.querySelectorAll('.voter-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.voter-checkbox:checked').length;
+            const total = document.querySelectorAll('.voter-checkbox').length;
+            const countEl = document.getElementById('selected-count');
+            if (countEl) {
+                countEl.textContent = selected > 0 ? `Đã chọn: ${selected}/${total}` : '';
+            }
+        }
+
+        async function approveSelectedVoters() {
+            const selectedIds = Array.from(document.querySelectorAll('.voter-checkbox:checked'))
+                .map(cb => parseInt(cb.value));
+
+            if (selectedIds.length === 0) {
+                alert('Vui lòng chọn ít nhất một cử tri để phê duyệt.');
+                return;
+            }
+
+            if (!confirm(`Xác nhận phê duyệt ${selectedIds.length} cử tri đã chọn?`)) {
+                return;
+            }
+
+            try {
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (const id of selectedIds) {
+                    try {
+                        const response = await fetch(`${API_URL}/admin/approve-registration/${id}`, {
+                            method: 'POST',
+                            headers: getAuthHeaders()
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } catch (error) {
+                        errorCount++;
+                    }
+                }
+
+                alert(`Phê duyệt hoàn tất!\nThành công: ${successCount}\nThất bại: ${errorCount}`);
+                loadElectionVotersPage();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function loadCandidatesForSelectedElection() {
+            if (!selectedElectionForCandidates) {
+                currentCandidates = [];
+                renderCandidatesList();
+                return;
+            }
+
+            const container = document.getElementById('candidates-list');
+            container.innerHTML = renderEmptyState('Đang tải danh sách ứng cử viên...');
+
+            try {
+                const response = await fetch(`${API_URL}/admin/elections/${selectedElectionForCandidates.id}/candidates`, {
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    currentCandidates = [];
+                    container.innerHTML = renderEmptyState(result.error || 'Không tải được ứng cử viên.');
+                    return;
+                }
+
+                if (result.election) {
+                    selectedElectionForCandidates = {
+                        ...selectedElectionForCandidates,
+                        ...result.election
+                    };
+                }
+
+                currentCandidates = Array.isArray(result.candidates) ? result.candidates : [];
+                renderCandidatesList();
+            } catch (error) {
+                currentCandidates = [];
+                container.innerHTML = renderEmptyState('Không tải được danh sách ứng cử viên.');
+            }
+        }
+
+        async function openCandidatesSection(encodedElection) {
+            selectedElectionForCandidates = JSON.parse(decodeURIComponent(encodedElection));
+            resetCandidateForm();
+
+            // Kiểm tra xem cuộc bầu cử đã bắt đầu chưa
+            const now = new Date();
+            const electionStartTime = new Date(selectedElectionForCandidates.start_time);
+            const hasStarted = now >= electionStartTime;
+
+            // Hiển thị nút đăng ký blockchain nếu election đã on-chain VÀ chưa bắt đầu
+            const registerBtn = document.getElementById('register-candidates-blockchain-btn');
+            if (registerBtn) {
+                registerBtn.style.display = (selectedElectionForCandidates.is_onchain && !hasStarted) ? 'block' : 'none';
+            }
+
+            renderCandidatesList();
+            showSection('candidates-section');
+            await loadCandidatesForSelectedElection();
+        }
+
+        function resetCandidateForm() {
+            editingCandidateId = null;
+            document.getElementById('candidate-name').value = '';
+            document.getElementById('candidate-image').value = '';
+            document.getElementById('candidate-description').value = '';
+            document.getElementById('candidate-form-response').style.display = 'none';
+        }
+
+        async function saveCandidateForm() {
+            if (!selectedElectionForCandidates) {
+                showResponse('candidate-form-response', { error: 'Chưa chọn cuộc bầu cử' }, true);
+                return;
+            }
+
+            // Kiểm tra trạng thái cuộc bầu cử
+            const now = new Date();
+            const startTime = new Date(selectedElectionForCandidates.start_time);
+            const endTime = new Date(selectedElectionForCandidates.end_time);
+
+            if (now >= startTime) {
+                showResponse('candidate-form-response', { error: 'Cuộc bầu cử đã bắt đầu, không thể thay đổi ứng cử viên' }, true);
+                return;
+            }
+
+            if (now > endTime) {
+                showResponse('candidate-form-response', { error: 'Cuộc bầu cử đã kết thúc, không thể thay đổi ứng cử viên' }, true);
+                return;
+            }
+
+            const name = document.getElementById('candidate-name').value.trim();
+            const imageUrl = document.getElementById('candidate-image').value.trim();
+            const description = document.getElementById('candidate-description').value.trim();
+
+            if (!name) {
+                showResponse('candidate-form-response', { error: 'Vui lòng nhập tên ứng cử viên' }, true);
+                return;
+            }
+
+            const isEditing = Boolean(editingCandidateId);
+            const endpoint = isEditing
+                ? `${API_URL}/admin/candidates/${editingCandidateId}`
+                : `${API_URL}/admin/elections/${selectedElectionForCandidates.id}/candidates`;
+            const method = isEditing ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method,
+                    headers: getAuthHeaders(true),
+                    body: JSON.stringify({ name, description, imageUrl })
+                });
+                const result = await response.json();
+
+                showResponse('candidate-form-response', result, !response.ok);
+                if (!response.ok) {
+                    return;
+                }
+
+                resetCandidateForm();
+                await loadCandidatesForSelectedElection();
+                await loadElections();
+            } catch (error) {
+                showResponse('candidate-form-response', { error: error.message }, true);
+            }
+        }
+
+        function editCandidate(candidateId) {
+            const candidate = currentCandidates.find(item => item.id === candidateId);
+            if (!candidate) {
+                return;
+            }
+
+            editingCandidateId = candidateId;
+            document.getElementById('candidate-name').value = candidate.candidate_name || '';
+            document.getElementById('candidate-image').value = candidate.image_url || '';
+            document.getElementById('candidate-description').value = candidate.candidate_description || '';
+            showSection('candidates-section');
+        }
+
+        async function deleteCandidate(candidateId) {
+            if (!selectedElectionForCandidates) {
+                return;
+            }
+
+            // Kiểm tra thời gian
+            const now = new Date();
+            const startTime = new Date(selectedElectionForCandidates.start_time);
+            const endTime = new Date(selectedElectionForCandidates.end_time);
+
+            if (now >= startTime) {
+                alert('Cuộc bầu cử đã bắt đầu, không thể xóa ứng cử viên.');
+                return;
+            }
+
+            if (now > endTime) {
+                alert('Cuộc bầu cử đã kết thúc, không thể xóa ứng cử viên.');
+                return;
+            }
+
+            // Kiểm tra nếu ứng cử viên đã được đăng ký lên blockchain
+            const candidate = currentCandidates.find(c => c.id === candidateId);
+            if (candidate && candidate.blockchain_candidate_id) {
+                alert('Ứng cử viên đã được đăng ký lên blockchain, không thể xóa.');
+                return;
+            }
+
+            if (!confirm('Xác nhận xóa ứng cử viên này?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/candidates/${candidateId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    alert(result.error || 'Không thỒ xóa ứng cử viên');
+                    return;
+                }
+
+                if (editingCandidateId === candidateId) {
+                    resetCandidateForm();
+                }
+
+                await loadCandidatesForSelectedElection();
+                await loadElections();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        function renderCandidatesList() {
+            const container = document.getElementById('candidates-list');
+            const formPanel = document.getElementById('candidate-form-panel');
+
+            if (!selectedElectionForCandidates) {
+                container.innerHTML = renderEmptyState('Chưa chọn cuộc bầu cử.');
+                if (formPanel) formPanel.style.display = 'none';
+                return;
+            }
+
+            // Kiểm tra trạng thái cuộc bầu cử
+            const now = new Date();
+            const startTime = new Date(selectedElectionForCandidates.start_time);
+            const endTime = new Date(selectedElectionForCandidates.end_time);
+            const hasStarted = now >= startTime;
+            const isExpired = now > endTime;
+
+            // Ẩn form nếu cuộc bầu cử đã bắt đầu hoặc kết thúc
+            if (formPanel) {
+                formPanel.style.display = (hasStarted || isExpired) ? 'none' : 'block';
+            }
+
+            document.getElementById('candidate-election-title').textContent = selectedElectionForCandidates.title || 'Chưa có tiêu đề';
+            document.getElementById('candidate-election-id').textContent = `Election ID: ${selectedElectionForCandidates.election_id || '--'}`;
+            document.getElementById('candidate-election-time').textContent = `Thời gian: ${formatDateTime(selectedElectionForCandidates.start_time)} - ${formatDateTime(selectedElectionForCandidates.end_time)}${hasStarted ? ' (Đã bắt đầu)' : ''}${isExpired ? ' (Đã kết thúc)' : ''}`;
+
+            if (currentCandidates.length === 0) {
+                container.innerHTML = renderEmptyState('Chưa có ứng cử viên nào cho cuộc bầu cử này.');
+                return;
+            }
+
+            // Sắp xếp: ứng cử viên chưa đăng ký lên đầu
+            const sortedCandidates = currentCandidates.sort((a, b) => {
+                if (Boolean(a.blockchain_candidate_id) === Boolean(b.blockchain_candidate_id)) return 0;
+                return a.blockchain_candidate_id ? 1 : -1;
+            });
+
+            // Khóa nút nếu đã bắt đầu HOẶC đã kết thúc
+            const isLocked = hasStarted || isExpired;
+            const rowsHtml = sortedCandidates.map((candidate, index) => {
+                // Khóa nút sửa/xóa nếu ứng cử viên đã được đăng ký lên blockchain
+                const isCandidateLocked = isLocked || Boolean(candidate.blockchain_candidate_id);
+                const isRegistered = Boolean(candidate.blockchain_candidate_id);
+                const checkboxDisabled = isRegistered ? 'disabled' : '';
+
+                const blockchainStatus = isRegistered
+                    ? `<span style="color: #16a34a; font-weight: 600;">✓ ID: ${candidate.blockchain_candidate_id}</span>`
+                    : '<span style="color: #6b7280;">Chưa đăng ký</span>';
+
+                return `
+                <tr>
+                    <td><input type="checkbox" class="candidate-checkbox" data-candidate-id="${candidate.id}" data-candidate-name="${escapeHtml(candidate.candidate_name)}" ${checkboxDisabled}></td>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(candidate.candidate_name)}</td>
+                    <td>${escapeHtml(candidate.candidate_description || '')}</td>
+                    <td>${escapeHtml(candidate.image_url || '')}</td>
+                    <td>${blockchainStatus}</td>
+                    <td>
+                        <div class="actions-stack">
+                            <button class="small-btn secondary" onclick="editCandidate(${candidate.id})" ${isCandidateLocked ? 'disabled' : ''}>Sửa</button>
+                            <button class="small-btn warning" onclick="deleteCandidate(${candidate.id})" ${isCandidateLocked ? 'disabled' : ''}>Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+
+            // Kiểm tra xem có ứng cử viên chưa đăng ký không
+            const hasUnregisteredCandidates = sortedCandidates.some(c => !c.blockchain_candidate_id);
+            const showRegisterButton = selectedElectionForCandidates.is_onchain && !hasStarted && hasUnregisteredCandidates;
+
+            const tableHtml = renderTable(
+                `Ứng cử viên của ${selectedElectionForCandidates.title}`,
+                ['Chọn', 'STT', 'Tên', 'Mô tả', 'Ảnh', 'Trạng thái Blockchain', 'Thao tác'],
+                rowsHtml
+            );
+
+            const buttonHtml = showRegisterButton ? `
+                <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+                    <button id="register-selected-candidates-btn" class="primary-btn" onclick="registerSelectedCandidatesOnchain()">
+                        🔗 Đăng ký ứng cử viên đã chọn lên Blockchain
+                    </button>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="select-all-candidates-checkbox" onchange="toggleAllCandidateCheckboxes(this.checked)">
+                        <span>Chọn tất cả (chưa đăng ký)</span>
+                    </label>
+                    <span id="selected-candidates-count" style="color: #6b7280; font-size: 14px;">0 ứng cử viên được chọn</span>
+                </div>
+            ` : '';
+
+            container.innerHTML = tableHtml + buttonHtml;
+
+            // Thêm event listener cho các checkbox
+            document.querySelectorAll('.candidate-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateSelectedCandidatesCount);
+            });
+            updateSelectedCandidatesCount();
+        }
+
+        async function approveRegistration(registrationId) {
+            if (!confirm('Xác nhận phê duyệt đăng ký này?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/approve-registration/${registrationId}`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+                alert(result.message || 'Phê duyệt thành công');
+                loadElectionVotersPage();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        // Hàm toggle tất cả checkbox candidates
+        function toggleAllCandidateCheckboxes(checked) {
+            document.querySelectorAll('.candidate-checkbox:not([disabled])').forEach(cb => {
+                cb.checked = checked;
+            });
+            updateSelectedCandidatesCount();
+        }
+
+        // Hàm cập nhật số lượng ứng cử viên được chọn
+        function updateSelectedCandidatesCount() {
+            const selectedCount = document.querySelectorAll('.candidate-checkbox:checked').length;
+            const countElement = document.getElementById('selected-candidates-count');
+            if (countElement) {
+                countElement.textContent = `${selectedCount} ứng cử viên được chọn`;
+            }
+
+            // Cập nhật trạng thái nút đăng ký
+            const registerBtn = document.getElementById('register-selected-candidates-btn');
+            if (registerBtn) {
+                registerBtn.disabled = selectedCount === 0;
+            }
+        }
+
+        async function registerCandidateBatch(candidatesToRegister, options = {}) {
+            if (!contract || !signer) {
+                alert('Vui lòng kết nối MetaMask trước!');
+                return;
+            }
+
+            if (!Array.isArray(candidatesToRegister) || candidatesToRegister.length === 0) {
+                alert('Không có ứng cử viên nào để đăng ký');
+                return;
+            }
+
+            const electionDbId = options.electionDbId || selectedElectionForCandidates?.id;
+            const electionTitle = options.electionTitle || selectedElectionForCandidates?.title || 'không xác định';
+            const blockchainElectionId = options.blockchainElectionId || selectedElectionForCandidates?.election_id;
+
+            if (!electionDbId || !blockchainElectionId) {
+                alert('Không tìm thấy thông tin cuộc bầu cử on-chain');
+                return;
+            }
+
+            if (!confirm(`Xác nhận đăng ký ${candidatesToRegister.length} ứng cử viên lên blockchain cho cuộc bầu cử "${electionTitle}"?\n\nHệ thống sẽ gửi 1 transaction duy nhất và bạn chỉ cần xác nhận MetaMask một lần.`)) {
+                return;
+            }
+
+            try {
+                const candidateNames = candidatesToRegister.map(candidate => candidate.candidate_name || candidate.name || 'Ứng viên');
+                const candidateDescriptions = candidatesToRegister.map(candidate => candidate.candidate_description || candidate.description || candidate.party || candidate.manifesto || 'Ứng viên');
+                const candidateImages = candidatesToRegister.map(candidate => candidate.image_url || '');
+
+                alert(`Đang gửi 1 transaction để đăng ký ${candidatesToRegister.length} ứng cử viên...\nVui lòng xác nhận trong MetaMask.`);
+
+                const tx = await contract.addCandidatesBatch(
+                    blockchainElectionId,
+                    candidateNames,
+                    candidateDescriptions,
+                    candidateImages
+                );
+
+                const receipt = await tx.wait();
+                const candidateMappings = [];
+
+                for (const log of receipt.logs) {
+                    try {
+                        const parsedLog = contract.interface.parseLog(log);
+                        if (parsedLog && parsedLog.name === 'CandidateAdded') {
+                            candidateMappings.push({
+                                blockchainCandidateId: Number(parsedLog.args.candidateId),
+                                electionId: Number(parsedLog.args.electionId)
+                            });
+                        }
+                    } catch (e) {
+                        // Bỏ qua log không parse được
+                    }
+                }
+
+                if (candidateMappings.length !== candidatesToRegister.length) {
+                    throw new Error(`Không đọc đủ sự kiện CandidateAdded (${candidateMappings.length}/${candidatesToRegister.length})`);
+                }
+
+                const updateResponse = await fetch(`${API_URL}/admin/elections/${electionDbId}/mark-candidates-onchain`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(true),
+                    body: JSON.stringify({
+                        txHash: tx.hash,
+                        candidates: candidatesToRegister.map((candidate, index) => ({
+                            candidateId: candidate.id,
+                            blockchainCandidateId: candidateMappings[index].blockchainCandidateId
+                        }))
+                    })
+                });
+
+                const updateResult = await updateResponse.json();
+                if (!updateResponse.ok) {
+                    throw new Error(updateResult.error || 'Không thể cập nhật trạng thái ứng cử viên trong database');
+                }
+
+                alert(`✅ Đã đăng ký ${candidatesToRegister.length} ứng cử viên lên blockchain thành công bằng 1 transaction!\nTx hash: ${tx.hash}`);
+
+                await loadElections();
+                if (options.refreshSelectedPage !== false && selectedElectionForCandidates) {
+                    await loadCandidatesForSelectedElection();
+                }
+            } catch (error) {
+                console.error('Lỗi đăng ký ứng cử viên:', error);
+                if (error.code === 4001) {
+                    alert('Bạn đã từ chối transaction trong MetaMask');
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        // Hàm đăng ký ứng cử viên đã chọn lên blockchain
+        async function registerSelectedCandidatesOnchain() {
+            if (!selectedElectionForCandidates) {
+                alert('Chưa chọn cuộc bầu cử');
+                return;
+            }
+
+            const selectedCheckboxes = document.querySelectorAll('.candidate-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một ứng cử viên để đăng ký');
+                return;
+            }
+
+            const selectedCandidateIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.candidateId));
+            const candidatesToRegister = currentCandidates.filter(candidate => selectedCandidateIds.includes(candidate.id));
+
+            await registerCandidateBatch(candidatesToRegister, {
+                electionDbId: selectedElectionForCandidates.id,
+                electionTitle: selectedElectionForCandidates.title,
+                blockchainElectionId: selectedElectionForCandidates.election_id,
+                refreshSelectedPage: true
+            });
+        }
+
+        // Hàm đăng ký ứng cử viên lên blockchain từ trang candidates (legacy - giữ lại để tương thích)
+        async function registerCandidatesOnchainFromCandidatePage() {
+            if (!selectedElectionForCandidates) {
+                alert('Chưa chọn cuộc bầu cử');
+                return;
+            }
+
+            await registerCandidatesOnchain(selectedElectionForCandidates.id, selectedElectionForCandidates.title);
+        }
+
+        // Hàm toggle tất cả checkbox
+        function toggleAllVoterCheckboxes(checked) {
+            document.querySelectorAll('.voter-checkbox:not([disabled])').forEach(cb => {
+                cb.checked = checked;
+            });
+            updateSelectedVotersCount();
+        }
+
+        // Hàm cập nhật số lượng cử tri được chọn
+        function updateSelectedVotersCount() {
+            const selectedCount = document.querySelectorAll('.voter-checkbox:checked').length;
+            const countElement = document.getElementById('selected-voters-count');
+            if (countElement) {
+                countElement.textContent = `${selectedCount} cử tri được chọn`;
+            }
+
+            // Cập nhật trạng thái nút đăng ký
+            const registerBtn = document.getElementById('register-selected-voters-btn');
+            if (registerBtn) {
+                registerBtn.disabled = selectedCount === 0;
+            }
+        }
+
+        // Hàm đăng ký cử tri đã chọn lên blockchain
+        async function registerSelectedVotersOnchain() {
+            if (!currentElectionForVoters) {
+                alert('Chưa chọn cuộc bầu cử');
+                return;
+            }
+
+            // Lấy danh sách cử tri đã chọn
+            const selectedCheckboxes = document.querySelectorAll('.voter-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một cử tri để đăng ký');
+                return;
+            }
+
+            const selectedVoters = Array.from(selectedCheckboxes).map(cb => ({
+                user_id: parseInt(cb.dataset.voterId),
+                wallet_address: cb.dataset.wallet
+            }));
+
+            // Kiểm tra MetaMask đã kết nối chưa
+            if (!contract || !signer) {
+                alert('Vui lòng kết nối MetaMask trước!');
+                return;
+            }
+
+            const blockchainElectionId = currentElectionForVoters.blockchain_id;
+
+            console.log('Blockchain Election ID:', blockchainElectionId);
+            console.log('Selected voters:', selectedVoters);
+
+            if (!confirm(`Xác nhận đăng ký ${selectedVoters.length} cử tri lên blockchain cho cuộc bầu cử "${currentElectionForVoters.title}"?\n\nElection ID: ${blockchainElectionId}\n\nLưu ý: MetaMask sẽ yêu cầu bạn xác nhận và thanh toán gas fee.`)) {
+                return;
+            }
+
+            try {
+                const voterAddresses = selectedVoters.map(v => v.wallet_address);
+
+                console.log(`Đăng ký ${selectedVoters.length} cử tri lên blockchain...`);
+                console.log('Voter addresses:', voterAddresses);
+
+                alert(`Đang gửi transaction đăng ký ${selectedVoters.length} cử tri...\nVui lòng xác nhận trong MetaMask.`);
+
+                // Gọi contract.registerVotersBatch()
+                const tx = await contract.registerVotersBatch(
+                    blockchainElectionId,
+                    voterAddresses
+                );
+
+                alert('Transaction đã được gửi!\nĐang chờ xác nhận...');
+                console.log('Transaction hash:', tx.hash);
+
+                // Đợi transaction được confirm
+                const receipt = await tx.wait();
+                console.log('Transaction confirmed:', receipt);
+
+                // Cập nhật trạng thái trong database
+                try {
+                    const voterIds = selectedVoters.map(v => v.user_id);
+                    console.log('Đang cập nhật database với voter IDs:', voterIds);
+                    console.log('Election DB ID:', currentElectionForVoters.db_id);
+
+                    const updateResponse = await fetch(`${API_URL}/admin/elections/${currentElectionForVoters.db_id}/mark-voters-onchain`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(true),
+                        body: JSON.stringify({
+                            voterIds: voterIds,
+                            txHash: tx.hash
+                        })
+                    });
+
+                    const updateResult = await updateResponse.json();
+                    console.log('Database update response:', updateResult);
+
+                    if (updateResponse.ok) {
+                        console.log('✓ Đã cập nhật trạng thái voters trong database:', updateResult);
+                    } else {
+                        console.error('✗ Không thể cập nhật trạng thái voters trong database:', updateResult);
+                        alert('Cảnh báo: Transaction thành công nhưng không cập nhật được database!\n' + (updateResult.error || 'Lỗi không xác định'));
+                    }
+                } catch (dbError) {
+                    console.error('✗ Lỗi cập nhật database:', dbError);
+                    alert('Cảnh báo: Transaction thành công nhưng có lỗi khi cập nhật database!\n' + dbError.message);
+                }
+
+                alert(`✅ Đã đăng ký ${selectedVoters.length} cử tri lên blockchain thành công!\n\nTx hash: ${tx.hash}`);
+                await loadElections();
+                await loadElectionVotersPage();
+
+            } catch (error) {
+                console.error('Lỗi đăng ký cử tri:', error);
+                console.error('Error details:', {
+                    code: error.code,
+                    message: error.message,
+                    data: error.data,
+                    reason: error.reason
+                });
+
+                if (error.code === 4001) {
+                    alert('Bạn đã từ chối transaction trong MetaMask');
+                } else if (error.code === -32603 || error.code === 'CALL_EXCEPTION') {
+                    let errorMsg = 'Lỗi từ smart contract:\n\n';
+
+                    // Thử decode error data
+                    try {
+                        if (error.data?.data?.data) {
+                            // Decode hex error message
+                            const errorData = error.data.data.data;
+                            if (errorData.startsWith('0x08c379a0')) {
+                                // Standard revert message
+                                const reason = ethers.utils.defaultAbiCoder.decode(['string'], '0x' + errorData.slice(10))[0];
+                                errorMsg += `"${reason}"\n\n`;
+                            }
+                        }
+                    } catch (decodeError) {
+                        console.error('Không thể decode error:', decodeError);
+                    }
+
+                    // Thử parse error message
+                    if (error.reason) {
+                        errorMsg += error.reason + '\n\n';
+                    } else if (error.data?.message) {
+                        errorMsg += error.data.message + '\n\n';
+                    } else if (error.message) {
+                        errorMsg += error.message + '\n\n';
+                    }
+
+                    errorMsg += 'Có thể do:\n';
+                    errorMsg += '- Election ID không đúng (Election ID: ' + blockchainElectionId + ')\n';
+                    errorMsg += '- Cuộc bầu cử không tồn tại trên blockchain\n';
+                    errorMsg += '- Cuộc bầu cử đã qua phase Configuration (đã bắt đầu)\n';
+                    errorMsg += '- Cử tri đã được đăng ký lên blockchain rồi\n';
+                    errorMsg += '- Địa chỉ ví không hợp lệ\n';
+                    errorMsg += '- Bạn không phải là admin của contract';
+
+                    alert(errorMsg);
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        // Hàm đăng ký cử tri lên blockchain từ trang voters (legacy - giữ lại để tương thích)
+        async function registerVotersOnchainFromVoterPage() {
+            if (!currentElectionForVoters) {
+                alert('Chưa chọn cuộc bầu cử');
+                return;
+            }
+
+            await registerVotersOnchain(currentElectionForVoters.db_id, currentElectionForVoters.title);
+        }
+
+        async function createElection() {
+            const data = {
+                title: document.getElementById('election-title').value,
+                description: document.getElementById('election-desc').value,
+                startTime: document.getElementById('election-start').value,
+                endTime: document.getElementById('election-end').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/admin/elections`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(true),
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                showResponse('create-election-response', result, !response.ok);
+
+                if (response.ok) {
+                    document.getElementById('election-title').value = '';
+                    document.getElementById('election-desc').value = '';
+                    document.getElementById('election-start').value = '';
+                    document.getElementById('election-end').value = '';
+                    loadElections();
+                }
+            } catch (error) {
+                showResponse('create-election-response', { error: error.message }, true);
+            }
+        }
+
+        // Tự động kết nối lại MetaMask khi trang load
+        autoConnectMetaMask();
+
+        loadElections();
+        renderCandidatesList();
+    </script>
+</body>
+
+</html>

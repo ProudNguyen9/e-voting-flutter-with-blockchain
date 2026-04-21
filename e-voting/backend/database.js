@@ -13,7 +13,7 @@ function normalizeServerName(server) {
     return s;
 }
 
-// Parse connection string kiểu .NET Core
+// Parse connection string 
 function parseConnectionString(connStr) {
     const config = {
         options: {

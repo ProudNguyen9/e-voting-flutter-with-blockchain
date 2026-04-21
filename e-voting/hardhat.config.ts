@@ -11,7 +11,7 @@ export default defineConfig({
           viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1000,
           },
         },
       },

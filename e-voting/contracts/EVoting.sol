@@ -12,18 +12,18 @@ contract EVoting {
     // ========================================
     // PHẦN 1: CẤU TRÚC DỮ LIỆU
     // ========================================
-    
+
     /**
      * @dev Enum trạng thái bầu cử
      */
     enum ElectionPhase {
-        Configuration,   // 0 - Thiết lập bầu cử
-        Casting,        // 1 - Đang bỏ phiếu
-        Anonymization,  // 2 - Xáo trộn phiếu
-        Decryption,     // 3 - Giải mã & đếm phiếu
-        Completed       // 4 - Hoàn thành
+        Configuration, // 0 - Thiết lập bầu cử
+        Casting, // 1 - Đang bỏ phiếu
+        Anonymization, // 2 - Xáo trộn phiếu
+        Decryption, // 3 - Giải mã & đếm phiếu
+        Completed // 4 - Hoàn thành
     }
-    
+
     /**
      * @dev Struct thông tin bầu cử
      */
@@ -39,7 +39,7 @@ contract EVoting {
         uint256 totalVoters;
         uint256 totalVoted;
     }
-    
+
     /**
      * @dev Struct ứng cử viên
      */
@@ -51,20 +51,20 @@ contract EVoting {
         uint256 voteCount;
         bool exists;
     }
-    
+
     /**
      * @dev Struct phiếu bầu đã mã hóa
      */
     struct EncryptedBallot {
         uint256 electionId;
         address voter;
-        bytes encryptedVote;  // Phiếu đã mã hóa
-        bytes32 commitment;   // Commitment để xác minh
+        bytes encryptedVote; // Phiếu đã mã hóa
+        bytes32 commitment; // Commitment để xác minh
         uint256 timestamp;
-        bool isShuffled;      // Đã xáo trộn chưa
-        bool isDecrypted;     // Đã giải mã chưa
+        bool isShuffled; // Đã xáo trộn chưa
+        bool isDecrypted; // Đã giải mã chưa
     }
-    
+
     /**
      * @dev Struct proof để audit
      */
@@ -74,15 +74,15 @@ contract EVoting {
         bytes32 decryptionProof;
         uint256 timestamp;
     }
-    
+
     // ========================================
     // PHẦN 2: BIẾN TRẠNG THÁI
     // ========================================
-    
+
     address public admin;
     uint256 public electionCounter = 0;
     uint256 public ballotCounter = 0;
-    
+
     // Mappings
     mapping(uint256 => Election) public elections;
     mapping(uint256 => mapping(uint256 => Candidate)) public candidates; // electionId => candidateId => Candidate
@@ -91,11 +91,11 @@ contract EVoting {
     mapping(uint256 => mapping(address => bool)) public isRegisteredVoter; // electionId => voter => đã đăng ký chưa
     mapping(uint256 => EncryptedBallot[]) public encryptedBallots; // electionId => danh sách phiếu
     mapping(uint256 => AuditProof[]) public auditTrail; // electionId => audit trail
-    
+
     // ========================================
     // PHẦN 3: EVENTS
     // ========================================
-    
+
     event ElectionCreated(
         uint256 indexed electionId,
         string title,
@@ -103,70 +103,61 @@ contract EVoting {
         uint256 startTime,
         uint256 endTime
     );
-    
+
     event CandidateAdded(
         uint256 indexed electionId,
         uint256 indexed candidateId,
         string name
     );
-    
-    event VoterRegistered(
-        uint256 indexed electionId,
-        address indexed voter
-    );
-    
+
+    event VoterRegistered(uint256 indexed electionId, address indexed voter);
+
     event PhaseChanged(
         uint256 indexed electionId,
         ElectionPhase newPhase,
         uint256 timestamp
     );
-    
+
     event VoteCast(
         uint256 indexed electionId,
         address indexed voter,
         bytes32 commitment,
         uint256 timestamp
     );
-    
+
     event BallotsShuffled(
         uint256 indexed electionId,
         uint256 ballotCount,
         bytes32 shuffleProof
     );
-    
+
     event VoteDecrypted(
         uint256 indexed electionId,
         uint256 ballotIndex,
         uint256 candidateId
     );
-    
-    event ElectionCompleted(
-        uint256 indexed electionId,
-        uint256 totalVotes
-    );
-    
+
+    event ElectionCompleted(uint256 indexed electionId, uint256 totalVotes);
+
     // ========================================
     // PHẦN 4: MODIFIERS
     // ========================================
-    
+
     modifier onlyAdmin() {
         require(msg.sender == admin, "Chi admin moi duoc thuc hien");
         _;
     }
-    
+
     modifier electionExists(uint256 _electionId) {
         require(elections[_electionId].exists, "Bau cu khong ton tai");
         _;
     }
-    
+
     modifier inPhase(uint256 _electionId, ElectionPhase _phase) {
-        require(
-            elections[_electionId].phase == _phase,
-            "Khong dung giai doan"
-        );
+        require(elections[_electionId].phase == _phase, "Khong dung giai doan");
         _;
     }
-    
+
     modifier isRegistered(uint256 _electionId) {
         require(
             isRegisteredVoter[_electionId][msg.sender],
@@ -174,27 +165,24 @@ contract EVoting {
         );
         _;
     }
-    
+
     modifier hasNotVoted(uint256 _electionId) {
-        require(
-            !hasVoted[_electionId][msg.sender],
-            "Ban da bo phieu roi"
-        );
+        require(!hasVoted[_electionId][msg.sender], "Ban da bo phieu roi");
         _;
     }
-    
+
     // ========================================
     // PHẦN 5: CONSTRUCTOR
     // ========================================
-    
+
     constructor() {
         admin = msg.sender;
     }
-    
+
     // ========================================
     // PHẦN 6: PHASE 1 - CONFIGURATION
     // ========================================
-    
+
     /**
      * @dev Tạo bầu cử mới
      */
@@ -204,11 +192,17 @@ contract EVoting {
         uint256 _startTime,
         uint256 _endTime
     ) public onlyAdmin returns (uint256) {
-        require(_startTime > block.timestamp, "Thoi gian bat dau phai lon hon hien tai");
-        require(_endTime > _startTime, "Thoi gian ket thuc phai lon hon bat dau");
-        
+        require(
+            _startTime > block.timestamp,
+            "Thoi gian bat dau phai lon hon hien tai"
+        );
+        require(
+            _endTime > _startTime,
+            "Thoi gian ket thuc phai lon hon bat dau"
+        );
+
         electionCounter++;
-        
+
         elections[electionCounter] = Election({
             id: electionCounter,
             title: _title,
@@ -221,7 +215,7 @@ contract EVoting {
             totalVoters: 0,
             totalVoted: 0
         });
-        
+
         emit ElectionCreated(
             electionCounter,
             _title,
@@ -229,10 +223,10 @@ contract EVoting {
             _startTime,
             _endTime
         );
-        
+
         return electionCounter;
     }
-    
+
     /**
      * @dev Thêm ứng cử viên
      */
@@ -241,10 +235,55 @@ contract EVoting {
         string memory _name,
         string memory _description,
         string memory _imageUrl
-    ) public onlyAdmin electionExists(_electionId) inPhase(_electionId, ElectionPhase.Configuration) {
+    )
+        public
+        onlyAdmin
+        electionExists(_electionId)
+        inPhase(_electionId, ElectionPhase.Configuration)
+    {
+        _addCandidate(_electionId, _name, _description, _imageUrl);
+    }
+
+    /**
+     * @dev Thêm nhiều ứng cử viên cùng lúc
+     */
+    function addCandidatesBatch(
+        uint256 _electionId,
+        string[] memory _names,
+        string[] memory _descriptions,
+        string[] memory _imageUrls
+    )
+        public
+        onlyAdmin
+        electionExists(_electionId)
+        inPhase(_electionId, ElectionPhase.Configuration)
+    {
+        require(_names.length > 0, "Danh sach ung vien rong");
+        require(
+            _names.length == _descriptions.length,
+            "So luong mo ta khong khop"
+        );
+        require(_names.length == _imageUrls.length, "So luong anh khong khop");
+
+        for (uint256 i = 0; i < _names.length; i++) {
+            _addCandidate(
+                _electionId,
+                _names[i],
+                _descriptions[i],
+                _imageUrls[i]
+            );
+        }
+    }
+
+    function _addCandidate(
+        uint256 _electionId,
+        string memory _name,
+        string memory _description,
+        string memory _imageUrl
+    ) internal {
         uint256 candidateId = candidateCounters[_electionId] + 1;
         candidateCounters[_electionId] = candidateId;
-        
+
         candidates[_electionId][candidateId] = Candidate({
             id: candidateId,
             name: _name,
@@ -253,32 +292,42 @@ contract EVoting {
             voteCount: 0,
             exists: true
         });
-        
+
         emit CandidateAdded(_electionId, candidateId, _name);
     }
-    
+
     /**
      * @dev Đăng ký cử tri
      */
     function registerVoter(
         uint256 _electionId,
         address _voter
-    ) public onlyAdmin electionExists(_electionId) inPhase(_electionId, ElectionPhase.Configuration) {
+    )
+        public
+        onlyAdmin
+        electionExists(_electionId)
+        inPhase(_electionId, ElectionPhase.Configuration)
+    {
         require(!isRegisteredVoter[_electionId][_voter], "Cu tri da dang ky");
-        
+
         isRegisteredVoter[_electionId][_voter] = true;
         elections[_electionId].totalVoters++;
-        
+
         emit VoterRegistered(_electionId, _voter);
     }
-    
+
     /**
      * @dev Đăng ký nhiều cử tri cùng lúc
      */
     function registerVotersBatch(
         uint256 _electionId,
         address[] memory _voters
-    ) public onlyAdmin electionExists(_electionId) inPhase(_electionId, ElectionPhase.Configuration) {
+    )
+        public
+        onlyAdmin
+        electionExists(_electionId)
+        inPhase(_electionId, ElectionPhase.Configuration)
+    {
         for (uint256 i = 0; i < _voters.length; i++) {
             if (!isRegisteredVoter[_electionId][_voters[i]]) {
                 isRegisteredVoter[_electionId][_voters[i]] = true;
@@ -287,27 +336,39 @@ contract EVoting {
             }
         }
     }
-    
+
     /**
      * @dev Chuyển sang giai đoạn bỏ phiếu
      */
-    function startVoting(uint256 _electionId) 
-        public 
-        onlyAdmin 
-        electionExists(_electionId) 
-        inPhase(_electionId, ElectionPhase.Configuration) 
+    function startVoting(
+        uint256 _electionId
+    )
+        public
+        onlyAdmin
+        electionExists(_electionId)
+        inPhase(_electionId, ElectionPhase.Configuration)
     {
-        require(block.timestamp >= elections[_electionId].startTime, "Chua den thoi gian bat dau");
-        require(candidateCounters[_electionId] >= 2, "Phai co it nhat 2 ung vien");
-        
+        require(
+            candidateCounters[_electionId] >= 2,
+            "Phai co it nhat 2 ung vien"
+        );
+        require(
+            elections[_electionId].totalVoters >= 3,
+            "Phai co it nhat 3 cu tri"
+        );
+        require(
+            block.timestamp >= elections[_electionId].startTime,
+            "Chua den thoi gian bat dau"
+        );
+
         elections[_electionId].phase = ElectionPhase.Casting;
         emit PhaseChanged(_electionId, ElectionPhase.Casting, block.timestamp);
     }
-    
+
     // ========================================
     // PHẦN 7: PHASE 2 - CASTING (Bỏ phiếu)
     // ========================================
-    
+
     /**
      * @dev Cử tri bỏ phiếu (đã mã hóa trên client)
      */
@@ -315,36 +376,74 @@ contract EVoting {
         uint256 _electionId,
         bytes memory _encryptedVote,
         bytes32 _commitment
-    ) 
-        public 
+    )
+        public
         electionExists(_electionId)
         inPhase(_electionId, ElectionPhase.Casting)
         isRegistered(_electionId)
         hasNotVoted(_electionId)
     {
-        require(block.timestamp <= elections[_electionId].endTime, "Da het thoi gian bo phieu");
-        
-        // Lưu phiếu đã mã hóa
-        encryptedBallots[_electionId].push(EncryptedBallot({
-            electionId: _electionId,
-            voter: msg.sender,
-            encryptedVote: _encryptedVote,
-            commitment: _commitment,
-            timestamp: block.timestamp,
-            isShuffled: false,
-            isDecrypted: false
-        }));
-        
-        hasVoted[_electionId][msg.sender] = true;
-        elections[_electionId].totalVoted++;
-        
-        emit VoteCast(_electionId, msg.sender, _commitment, block.timestamp);
+        _recordVote(_electionId, msg.sender, _encryptedVote, _commitment);
     }
-    
+
+    /**
+     * @dev Admin/server bỏ phiếu thay cho cử tri đã đăng ký
+     */
+    function castVoteForVoter(
+        uint256 _electionId,
+        address _voter,
+        bytes memory _encryptedVote,
+        bytes32 _commitment
+    )
+        public
+        onlyAdmin
+        electionExists(_electionId)
+        inPhase(_electionId, ElectionPhase.Casting)
+    {
+        require(
+            isRegisteredVoter[_electionId][_voter],
+            "Ban chua dang ky bo phieu"
+        );
+        require(!hasVoted[_electionId][_voter], "Ban da bo phieu roi");
+
+        _recordVote(_electionId, _voter, _encryptedVote, _commitment);
+    }
+
+    function _recordVote(
+        uint256 _electionId,
+        address _voter,
+        bytes memory _encryptedVote,
+        bytes32 _commitment
+    ) internal {
+        require(
+            block.timestamp <= elections[_electionId].endTime,
+            "Da het thoi gian bo phieu"
+        );
+
+        encryptedBallots[_electionId].push(
+            EncryptedBallot({
+                electionId: _electionId,
+                voter: _voter,
+                encryptedVote: _encryptedVote,
+                commitment: _commitment,
+                timestamp: block.timestamp,
+                isShuffled: false,
+                isDecrypted: false
+            })
+        );
+
+        hasVoted[_electionId][_voter] = true;
+        elections[_electionId].totalVoted++;
+
+        emit VoteCast(_electionId, _voter, _commitment, block.timestamp);
+    }
+
     /**
      * @dev Kết thúc bỏ phiếu, chuyển sang xáo trộn
      */
-    function endVoting(uint256 _electionId)
+    function endVoting(
+        uint256 _electionId
+    )
         public
         onlyAdmin
         electionExists(_electionId)
@@ -354,15 +453,19 @@ contract EVoting {
             block.timestamp > elections[_electionId].endTime,
             "Chua het thoi gian bo phieu"
         );
-        
+
         elections[_electionId].phase = ElectionPhase.Anonymization;
-        emit PhaseChanged(_electionId, ElectionPhase.Anonymization, block.timestamp);
+        emit PhaseChanged(
+            _electionId,
+            ElectionPhase.Anonymization,
+            block.timestamp
+        );
     }
-    
+
     // ========================================
     // PHẦN 8: PHASE 3 - ANONYMIZATION (Xáo trộn)
     // ========================================
-    
+
     /**
      * @dev Xáo trộn phiếu để bảo vệ riêng tư
      * Trong thực tế, sử dụng Mix-Net hoặc Zero-Knowledge Proofs
@@ -378,31 +481,39 @@ contract EVoting {
     {
         uint256 ballotCount = encryptedBallots[_electionId].length;
         require(ballotCount > 0, "Khong co phieu nao");
-        
+
         // Đánh dấu tất cả phiếu đã được xáo trộn
         for (uint256 i = 0; i < ballotCount; i++) {
             encryptedBallots[_electionId][i].isShuffled = true;
         }
-        
+
         // Lưu proof để audit
-        auditTrail[_electionId].push(AuditProof({
-            ballotHash: keccak256(abi.encodePacked(_electionId, ballotCount)),
-            shuffleProof: _shuffleProof,
-            decryptionProof: bytes32(0),
-            timestamp: block.timestamp
-        }));
-        
+        auditTrail[_electionId].push(
+            AuditProof({
+                ballotHash: keccak256(
+                    abi.encodePacked(_electionId, ballotCount)
+                ),
+                shuffleProof: _shuffleProof,
+                decryptionProof: bytes32(0),
+                timestamp: block.timestamp
+            })
+        );
+
         emit BallotsShuffled(_electionId, ballotCount, _shuffleProof);
-        
+
         // Chuyển sang giai đoạn giải mã
         elections[_electionId].phase = ElectionPhase.Decryption;
-        emit PhaseChanged(_electionId, ElectionPhase.Decryption, block.timestamp);
+        emit PhaseChanged(
+            _electionId,
+            ElectionPhase.Decryption,
+            block.timestamp
+        );
     }
-    
+
     // ========================================
     // PHẦN 9: PHASE 4 - DECRYPTION & TALLYING
     // ========================================
-    
+
     /**
      * @dev Giải mã và đếm phiếu
      * Trong thực tế, sử dụng Threshold Decryption
@@ -418,7 +529,7 @@ contract EVoting {
     {
         uint256 ballotCount = encryptedBallots[_electionId].length;
         require(_candidateIds.length == ballotCount, "So luong khong khop");
-        
+
         // Đếm phiếu cho từng ứng viên
         for (uint256 i = 0; i < ballotCount; i++) {
             uint256 candidateId = _candidateIds[i];
@@ -426,27 +537,33 @@ contract EVoting {
                 candidates[_electionId][candidateId].exists,
                 "Ung vien khong ton tai"
             );
-            
+
             candidates[_electionId][candidateId].voteCount++;
             encryptedBallots[_electionId][i].isDecrypted = true;
-            
+
             emit VoteDecrypted(_electionId, i, candidateId);
         }
-        
+
         // Hoàn thành bầu cử
         elections[_electionId].phase = ElectionPhase.Completed;
-        emit PhaseChanged(_electionId, ElectionPhase.Completed, block.timestamp);
+        emit PhaseChanged(
+            _electionId,
+            ElectionPhase.Completed,
+            block.timestamp
+        );
         emit ElectionCompleted(_electionId, ballotCount);
     }
-    
+
     // ========================================
     // PHẦN 10: PHASE 5 - AUDITING (Xem & Kiểm tra)
     // ========================================
-    
+
     /**
      * @dev Lấy kết quả bầu cử
      */
-    function getResults(uint256 _electionId)
+    function getResults(
+        uint256 _electionId
+    )
         public
         view
         electionExists(_electionId)
@@ -467,11 +584,14 @@ contract EVoting {
             candidateCounters[_electionId]
         );
     }
-    
+
     /**
      * @dev Lấy thông tin ứng viên và số phiếu
      */
-    function getCandidate(uint256 _electionId, uint256 _candidateId)
+    function getCandidate(
+        uint256 _electionId,
+        uint256 _candidateId
+    )
         public
         view
         electionExists(_electionId)
@@ -484,7 +604,7 @@ contract EVoting {
     {
         Candidate memory candidate = candidates[_electionId][_candidateId];
         require(candidate.exists, "Ung vien khong ton tai");
-        
+
         return (
             candidate.name,
             candidate.description,
@@ -492,66 +612,64 @@ contract EVoting {
             candidate.voteCount
         );
     }
-    
+
     /**
      * @dev Lấy tất cả ứng viên
      */
-    function getAllCandidates(uint256 _electionId)
+    function getAllCandidates(
+        uint256 _electionId
+    )
         public
         view
         electionExists(_electionId)
-        returns (uint256[] memory ids, string[] memory names, uint256[] memory votes)
+        returns (
+            uint256[] memory ids,
+            string[] memory names,
+            uint256[] memory votes
+        )
     {
         uint256 count = candidateCounters[_electionId];
         ids = new uint256[](count);
         names = new string[](count);
         votes = new uint256[](count);
-        
+
         for (uint256 i = 1; i <= count; i++) {
-            ids[i-1] = i;
-            names[i-1] = candidates[_electionId][i].name;
-            votes[i-1] = candidates[_electionId][i].voteCount;
+            ids[i - 1] = i;
+            names[i - 1] = candidates[_electionId][i].name;
+            votes[i - 1] = candidates[_electionId][i].voteCount;
         }
-        
+
         return (ids, names, votes);
     }
-    
+
     /**
      * @dev Kiểm tra cử tri đã bỏ phiếu chưa
      */
-    function hasVoterVoted(uint256 _electionId, address _voter)
-        public
-        view
-        electionExists(_electionId)
-        returns (bool)
-    {
+    function hasVoterVoted(
+        uint256 _electionId,
+        address _voter
+    ) public view electionExists(_electionId) returns (bool) {
         return hasVoted[_electionId][_voter];
     }
-    
+
     /**
      * @dev Lấy audit trail
      */
-    function getAuditTrail(uint256 _electionId)
-        public
-        view
-        electionExists(_electionId)
-        returns (AuditProof[] memory)
-    {
+    function getAuditTrail(
+        uint256 _electionId
+    ) public view electionExists(_electionId) returns (AuditProof[] memory) {
         return auditTrail[_electionId];
     }
-    
+
     /**
      * @dev Lấy số lượng phiếu đã mã hóa
      */
-    function getBallotCount(uint256 _electionId)
-        public
-        view
-        electionExists(_electionId)
-        returns (uint256)
-    {
+    function getBallotCount(
+        uint256 _electionId
+    ) public view electionExists(_electionId) returns (uint256) {
         return encryptedBallots[_electionId].length;
     }
-    
+
     /**
      * @dev Xác minh commitment của phiếu
      */
@@ -559,28 +677,26 @@ contract EVoting {
         uint256 _electionId,
         uint256 _ballotIndex,
         bytes32 _commitment
-    )
-        public
-        view
-        electionExists(_electionId)
-        returns (bool)
-    {
-        require(_ballotIndex < encryptedBallots[_electionId].length, "Ballot khong ton tai");
-        return encryptedBallots[_electionId][_ballotIndex].commitment == _commitment;
+    ) public view electionExists(_electionId) returns (bool) {
+        require(
+            _ballotIndex < encryptedBallots[_electionId].length,
+            "Ballot khong ton tai"
+        );
+        return
+            encryptedBallots[_electionId][_ballotIndex].commitment ==
+            _commitment;
     }
-    
+
     // ========================================
     // PHẦN 11: HELPER FUNCTIONS
     // ========================================
-    
+
     /**
      * @dev Chuyển đổi phase sang string
      */
-    function phaseToString(ElectionPhase _phase)
-        public
-        pure
-        returns (string memory)
-    {
+    function phaseToString(
+        ElectionPhase _phase
+    ) public pure returns (string memory) {
         if (_phase == ElectionPhase.Configuration) return "Thiet lap";
         if (_phase == ElectionPhase.Casting) return "Dang bo phieu";
         if (_phase == ElectionPhase.Anonymization) return "Xao tron";
@@ -588,11 +704,13 @@ contract EVoting {
         if (_phase == ElectionPhase.Completed) return "Hoan thanh";
         return "Khong xac dinh";
     }
-    
+
     /**
      * @dev Lấy thông tin bầu cử đầy đủ
      */
-    function getElectionInfo(uint256 _electionId)
+    function getElectionInfo(
+        uint256 _electionId
+    )
         public
         view
         electionExists(_electionId)

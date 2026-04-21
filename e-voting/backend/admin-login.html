@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+        :root {
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #111827;
+            --muted: #6b7280;
+            --border: #d1d5db;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --error-bg: #fee2e2;
+            --error-text: #b91c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        p {
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .hint {
+            background: #f9fafb;
+            border: 1px solid var(--border);
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            height: 44px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            height: 44px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        .response {
+            margin-top: 16px;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            display: none;
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+        }
+
+        .response.error {
+            background: var(--error-bg);
+            color: var(--error-text);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <h1>Admin Login</h1>
+        <p>Đăng nhập để vào dashboard.</p>
+
+        <div class="hint">
+            Username: admin<br>
+            Password: admin123
+        </div>
+
+        <div class="field">
+            <label for="admin-username">Username</label>
+            <input type="text" id="admin-username" value="admin" placeholder="admin">
+        </div>
+
+        <div class="field">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" value="admin123" placeholder="password">
+        </div>
+
+        <button onclick="loginAdmin()">Đăng nhập</button>
+
+        <div id="admin-login-response" class="response"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        function showResponse(elementId, data, isError = false) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.className = 'response ' + (isError ? 'error' : 'success');
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function loginAdmin() {
+            const data = {
+                username: document.getElementById('admin-username').value,
+                password: document.getElementById('admin-password').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.token) {
+                    localStorage.setItem('evoting_admin_token', result.token);
+                    localStorage.setItem('evoting_admin_info', JSON.stringify(result.admin || {}));
+                    window.location.href = './admin-dashboard.html';
+                    return;
+                }
+
+                showResponse('admin-login-response', result, true);
+            } catch (error) {
+                showResponse('admin-login-response', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+
+</html>
